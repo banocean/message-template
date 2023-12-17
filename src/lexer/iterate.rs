@@ -4,7 +4,36 @@ use crate::lexer::error::{TokenizationError, TokenizationErrorKind};
 use crate::lexer::tokens::Token;
 use crate::utils::Second;
 
-struct Lexer<'a> {
+macro_rules! chars_to_tokens {
+    (
+        $self: expr, $s: expr,
+        { $( $x: pat => $y: ident, )* },
+        { $( $x2: pat => { $n: expr => $y2: ident else $z2: ident } )* },
+        { $( $d: pat => $r: expr )* }
+    ) => {
+        match $s {
+            $(
+                $x => {
+                    Token::$y
+                }
+            )*
+            $(
+                $x2 => {
+                    if $self.input.next().second() == Some($n) {
+                        Token::$y2
+                    } else {
+                        Token::$z2
+                    }
+                }
+            )*
+            $(
+                $d => $r
+            )*
+        }
+    };
+}
+
+pub struct Lexer<'a> {
     input_data: &'a str,
     input: Peekable<Enumerate<Chars<'a>>>,
     is_code_block_open: bool
@@ -52,7 +81,24 @@ impl<'a> Iterator for Lexer<'a> {
                 Token::Content(self.get_content(position, offset))
             }
         } else {
-            match char {
+            chars_to_tokens!(self, char, {
+                '/' => Division,
+                '%' => Remainder,
+                '^' => Exponent,
+                '(' => LeftBracket,
+                ')' => RightBracket,
+                ';' => Semicolon,
+                ',' => Coma,
+                '.' => Dot,
+            }, {
+                '+' => { '+' => Increase else Addition }
+                '-' => { '-' => Decrease else Subtraction }
+                '*' => { '*' => Exponent else Multiplication }
+                '=' => { '=' => Equal else Assign }
+                '!' => { '=' => NotEqual else Not }
+                '>' => { '=' => GreaterOrEqual else Greater }
+                '<' => { '=' => LessOrEqual else Less }
+            }, {
                 _ => {
                     return Some(Err(
                         TokenizationError::new(
@@ -61,7 +107,7 @@ impl<'a> Iterator for Lexer<'a> {
                         )
                     ))
                 }
-            }
+            })
         }))
     }
 }
