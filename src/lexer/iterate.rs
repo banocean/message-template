@@ -99,6 +99,26 @@ impl<'a> Iterator for Lexer<'a> {
                 '>' => { '=' => GreaterOrEqual else Greater }
                 '<' => { '=' => LessOrEqual else Less }
             }, {
+                'a'..='z' | 'A'..='Z' => {
+                    offset += 1;
+                    while let Some((_, char)) = self.input.next() {
+                        if !char.is_alphanumeric() { break; }
+                        offset += 1;
+                    }
+
+                    let name = self.get_content(position, offset);
+                    match name {
+                        "true" => Token::Bool(true),
+                        "false" => Token::Bool(false),
+                        "end" => Token::End,
+                        "for" => Token::For,
+                        "let" => Token::Let,
+                        "in" => Token::In,
+                        "if" => Token::If,
+                        "else" => Token::Else,
+                        _ => Token::Ident(name)
+                    }
+                }
                 _ => {
                     return Some(Err(
                         TokenizationError::new(
