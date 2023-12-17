@@ -99,6 +99,9 @@ impl<'a> Iterator for Lexer<'a> {
                 '>' => { '=' => GreaterOrEqual else Greater }
                 '<' => { '=' => LessOrEqual else Less }
             }, {
+                ' ' | '\t' | '\n' => {
+                    return self.next()
+                }
                 'a'..='z' | 'A'..='Z' => {
                     offset += 1;
                     while let Some((_, char)) = self.input.next() {
