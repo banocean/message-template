@@ -10,7 +10,7 @@ pub struct TokenizationError {
 #[derive(Debug)]
 pub enum TokenizationErrorKind {
     InvalidChar(char),
-
+    UnexpectedEndOfInput
 }
 
 #[derive(Debug)]
@@ -40,7 +40,8 @@ impl fmt::Display for TokenizationError {
 impl Error for TokenizationError {
     fn description(&self) -> &str {
         match self.kind {
-            TokenizationErrorKind::InvalidChar(char) => "Invalid character in code block"
+            TokenizationErrorKind::InvalidChar(char) => "Invalid character in code block",
+            TokenizationErrorKind::UnexpectedEndOfInput => "End of input in middle of code block"
         }
     }
 }

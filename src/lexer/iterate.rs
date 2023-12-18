@@ -169,3 +169,29 @@ impl<'a> Iterator for Lexer<'a> {
         }))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::lexer::iterate::Lexer;
+    use crate::lexer::tokens::Token;
+
+    #[test]
+    fn test_keywords() {
+        let mut lexer = Lexer::new("{{ true }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Bool(true), Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ false }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Bool(false), Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ end }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::End, Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ for }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::For, Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ let }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Let, Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ in }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::In, Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ if }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::If, Token::CodeBlockClose]);
+        let mut lexer = Lexer::new("{{ else }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Else, Token::CodeBlockClose]);
+    }
+}
