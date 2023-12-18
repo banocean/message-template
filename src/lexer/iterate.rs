@@ -44,6 +44,21 @@ macro_rules! chars_to_tokens {
     };
 }
 
+macro_rules! parse_or_error {
+    ($number: expr, $position: expr, $a: ident, $b: ident) => {
+        Token::$a(
+            match $number.parse() {
+                Ok(number) => number,
+                Err(err) => {
+                    return Some(Err(
+                        TokenizationError::new(TokenizationErrorKind::$b(err), $position)
+                    ));
+                }
+            }
+        )
+    };
+}
+
 pub struct Lexer<'a> {
     input_data: &'a str,
     input: Peekable<Enumerate<Chars<'a>>>,
@@ -157,6 +172,25 @@ impl<'a> Iterator for Lexer<'a> {
                         _ => Token::Ident(name)
                     }
                 }
+                '0'..='9' => {
+                    offset += 1;
+                    let mut is_float = false;
+                    while let Some((_, char)) = self.input.next() {
+                        if !char.is_ascii_digit() {
+                            if char == '.' {
+                                is_float = true
+                            } else { break }
+                        }
+                        offset += 1;
+                    }
+
+                    let number = self.get_content(position, offset);
+                    if is_float {
+                        parse_or_error!(number, position, Float, ParseFloat)
+                    } else {
+                        parse_or_error!(number, position, Integer, ParseInteger)
+                    }
+                }
                 _ => {
                     return Some(Err(
                         TokenizationError::new(
@@ -193,5 +227,20 @@ mod tests {
         assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::If, Token::CodeBlockClose]);
         let mut lexer = Lexer::new("{{ else }}");
         assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Else, Token::CodeBlockClose]);
+    }
+
+    #[test]
+    fn test_idents() {
+        let mut lexer = Lexer::new("{{ test }}");
+        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Ident("test"), Token::CodeBlockClose])
+    }
+
+    #[test]
+    fn test_numbers() {
+        let mut lexer = Lexer::new("{{ 1.1 + 256 }}");
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::Float(1.1), Token::Addition, Token::Integer(256), Token::CodeBlockClose]
+        )
     }
 }
