@@ -5,7 +5,7 @@ use std::num::{ParseFloatError, ParseIntError};
 #[derive(Debug)]
 pub struct TokenizationError {
     kind: TokenizationErrorKind,
-    backtrace: Backtrace
+    backtrace: Backtrace,
 }
 
 #[derive(Debug)]
@@ -13,12 +13,12 @@ pub enum TokenizationErrorKind {
     InvalidChar(char),
     UnexpectedEndOfInput,
     ParseInteger(ParseIntError),
-    ParseFloat(ParseFloatError)
+    ParseFloat(ParseFloatError),
 }
 
 #[derive(Debug)]
 pub struct Backtrace {
-    position: usize
+    position: usize,
 }
 
 impl TokenizationError {
@@ -46,7 +46,7 @@ impl Error for TokenizationError {
             TokenizationErrorKind::InvalidChar(char) => "Invalid character in code block",
             TokenizationErrorKind::UnexpectedEndOfInput => "End of input in middle of code block",
             TokenizationErrorKind::ParseInteger(error) => error.description(),
-            TokenizationErrorKind::ParseFloat(error) => error.description()
+            TokenizationErrorKind::ParseFloat(error) => error.description(),
         }
     }
 }

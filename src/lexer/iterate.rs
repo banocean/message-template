@@ -1,8 +1,8 @@
-use std::iter::{Enumerate, Peekable};
-use std::str::Chars;
 use crate::lexer::error::{TokenizationError, TokenizationErrorKind};
 use crate::lexer::tokens::Token;
 use crate::utils::Second;
+use std::iter::{Enumerate, Peekable};
+use std::str::Chars;
 
 macro_rules! chars_to_tokens {
     (
@@ -62,7 +62,7 @@ macro_rules! parse_or_error {
 pub struct Lexer<'a> {
     input_data: &'a str,
     input: Peekable<Enumerate<Chars<'a>>>,
-    is_code_block_open: bool
+    is_code_block_open: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -82,7 +82,7 @@ impl<'a> Lexer<'a> {
         Ok(accumulator)
     }
     fn get_content(&self, position: usize, offset: usize) -> &'a str {
-        &self.input_data[position..position+offset]
+        &self.input_data[position..position + offset]
     }
 
     fn look_ahead(&mut self) -> Option<char> {
@@ -106,7 +106,7 @@ impl<'a> Iterator for Lexer<'a> {
                 while let Some((_, char)) = self.input.next() {
                     if char == '{' && self.look_ahead() == Some('{') {
                         self.next();
-                        return Some(Ok(Token::Content(self.get_content(position, offset))))
+                        return Some(Ok(Token::Content(self.get_content(position, offset))));
                     }
                     offset += 1;
                 }
@@ -172,6 +172,15 @@ impl<'a> Iterator for Lexer<'a> {
                         _ => Token::Ident(name)
                     }
                 }
+                '"' => {
+                    while let Some((_, char)) = self.input.next() {
+                        if char == '"' {
+                            break;
+                        }
+                        offset += 1;
+                    }
+                    Token::String(self.get_content(position + 1, offset))
+                }
                 '0'..='9' => {
                     offset += 1;
                     let mut is_float = false;
@@ -212,27 +221,66 @@ mod tests {
     #[test]
     fn test_keywords() {
         let mut lexer = Lexer::new("{{ true }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Bool(true), Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![
+                Token::CodeBlockOpen,
+                Token::Bool(true),
+                Token::CodeBlockClose
+            ]
+        );
         let mut lexer = Lexer::new("{{ false }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Bool(false), Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![
+                Token::CodeBlockOpen,
+                Token::Bool(false),
+                Token::CodeBlockClose
+            ]
+        );
         let mut lexer = Lexer::new("{{ end }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::End, Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::End, Token::CodeBlockClose]
+        );
         let mut lexer = Lexer::new("{{ for }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::For, Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::For, Token::CodeBlockClose]
+        );
         let mut lexer = Lexer::new("{{ let }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Let, Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::Let, Token::CodeBlockClose]
+        );
         let mut lexer = Lexer::new("{{ in }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::In, Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::In, Token::CodeBlockClose]
+        );
         let mut lexer = Lexer::new("{{ if }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::If, Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::If, Token::CodeBlockClose]
+        );
         let mut lexer = Lexer::new("{{ else }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Else, Token::CodeBlockClose]);
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![Token::CodeBlockOpen, Token::Else, Token::CodeBlockClose]
+        );
     }
 
     #[test]
     fn test_idents() {
         let mut lexer = Lexer::new("{{ test }}");
-        assert_eq!(lexer.try_collect().unwrap(), vec![Token::CodeBlockOpen, Token::Ident("test"), Token::CodeBlockClose])
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![
+                Token::CodeBlockOpen,
+                Token::Ident("test"),
+                Token::CodeBlockClose
+            ]
+        )
     }
 
     #[test]
@@ -240,7 +288,35 @@ mod tests {
         let mut lexer = Lexer::new("{{ 1.1 + 256 }}");
         assert_eq!(
             lexer.try_collect().unwrap(),
-            vec![Token::CodeBlockOpen, Token::Float(1.1), Token::Addition, Token::Integer(256), Token::CodeBlockClose]
+            vec![
+                Token::CodeBlockOpen,
+                Token::Float(1.1),
+                Token::Addition,
+                Token::Integer(256),
+                Token::CodeBlockClose
+            ]
         )
+    }
+
+    #[test]
+    fn test_strings() {
+        let mut lexer = Lexer::new("{{ \"test\" }}");
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![
+                Token::CodeBlockOpen,
+                Token::String("test"),
+                Token::CodeBlockClose
+            ]
+        );
+        let mut lexer = Lexer::new("{{ \"\" }}");
+        assert_eq!(
+            lexer.try_collect().unwrap(),
+            vec![
+                Token::CodeBlockOpen,
+                Token::String(""),
+                Token::CodeBlockClose
+            ]
+        );
     }
 }
