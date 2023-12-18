@@ -6,9 +6,10 @@ use crate::utils::Second;
 
 macro_rules! chars_to_tokens {
     (
-        $self: expr, $s: expr,
+        $self: expr, $s: expr, $position: expr,
         { $( $x: pat => $y: ident, )* },
         { $( $x2: pat => { $n: expr => $y2: ident else $z2: ident } )* },
+        { $( $x3: expr => $y3: ident, )* },
         { $( $d: pat => $r: expr )* }
     ) => {
         match $s {
@@ -58,6 +59,13 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    pub fn try_collect(&mut self) -> Result<Vec<Token>, TokenizationError> {
+        let mut accumulator = vec![];
+        while let Some(result) = self.next() {
+            accumulator.push(result?)
+        }
+        Ok(accumulator)
+    }
     fn get_content(&self, position: usize, offset: usize) -> &'a str {
         &self.input_data[position..position+offset]
     }
@@ -91,7 +99,7 @@ impl<'a> Iterator for Lexer<'a> {
                 Token::Content(self.get_content(position, offset))
             }
         } else {
-            chars_to_tokens!(self, char, {
+            chars_to_tokens!(self, char, position, {
                 '/' => Division,
                 '%' => Remainder,
                 '^' => Exponent,
