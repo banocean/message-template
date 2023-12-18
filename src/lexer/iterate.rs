@@ -27,6 +27,16 @@ macro_rules! chars_to_tokens {
                 }
             )*
             $(
+                $x3 => {
+                    if $self.input.next().second() != Some($x3) {
+                        return Some(Err(
+                            TokenizationError::new(TokenizationErrorKind::InvalidChar($x3), $position)
+                        ))
+                    }
+                    Token::$y3
+                }
+            )*
+            $(
                 $d => $r
             )*
         }
@@ -98,6 +108,9 @@ impl<'a> Iterator for Lexer<'a> {
                 '!' => { '=' => NotEqual else Not }
                 '>' => { '=' => GreaterOrEqual else Greater }
                 '<' => { '=' => LessOrEqual else Less }
+            }, {
+                '&' => And,
+                '|' => Or,
             }, {
                 ' ' | '\t' | '\n' => {
                     return self.next()
