@@ -112,6 +112,20 @@ impl<'a> Iterator for Lexer<'a> {
                 '&' => And,
                 '|' => Or,
             }, {
+                '}' => {
+                    if self.input.next().second() != Some('}') {
+                        return Some(Err(
+                            TokenizationError::new(
+                                TokenizationErrorKind::InvalidChar(char), position
+                            )
+                        ))
+                    }
+
+                    self.next();
+                    self.is_code_block_open = false;
+
+                    Token::CodeBlockClose
+                }
                 ' ' | '\t' | '\n' => {
                     return self.next()
                 }
