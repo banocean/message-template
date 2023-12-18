@@ -64,7 +64,7 @@ impl<'a> Iterator for Lexer<'a> {
         let (position, char) = self.input.next()?;
         let mut offset = 0usize;
 
-        Some(Ok(if self.is_code_block_open {
+        Some(Ok(if !self.is_code_block_open {
             if char == '{' && self.input.next().second() == Some('{') {
                 self.is_code_block_open = true;
                 Token::CodeBlockOpen
