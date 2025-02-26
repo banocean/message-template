@@ -1,0 +1,150 @@
+#[derive(Debug, PartialEq, Clone)]
+pub enum ProgramFlow<'a> {
+    Content(&'a str),
+    Statement(Statement<'a>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Statement<'a> {
+    Let(LetStatement<'a>),
+    For(ForStatement<'a>),
+    If(IfStatement<'a>),
+    Return(ReturnStatement<'a>),
+    Break,
+    Continue,
+    Display(DisplayStatement<'a>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct LetStatement<'a> {
+    pub identifier: Identifier<'a>,
+    pub expression: Expression<'a>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ForStatement<'a> {
+    pub identifier: Identifier<'a>,
+    pub iterable: Expression<'a>,
+    pub body: Scope<'a>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct IfStatement<'a> {
+    pub condition: Expression<'a>,
+    pub then_block: Scope<'a>,
+    pub else_block: Option<Scope<'a>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ReturnStatement<'a> {
+    pub expression: Option<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct DisplayStatement<'a> {
+    pub expression: Expression<'a>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Scope<'a>(Vec<ProgramFlow<'a>>);
+
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Expression<'a> {
+    Identifier(Identifier<'a>),
+    Literal(Literal<'a>),
+    Binary(BinaryExpression<'a>),
+    Unary(UnaryExpression<'a>),
+    FunctionCall(FunctionCall<'a>),
+    Index(IndexExpression<'a>),
+    MemberAccess(MemberAccessExpression<'a>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Identifier<'a> {
+    pub name: &'a str,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Literal<'a> {
+    String(StringLiteral<'a>),
+    Integer(IntegerLiteral),
+    Float(FloatLiteral),
+    Bool(BoolLiteral),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct StringLiteral<'a> {
+    pub value: &'a str,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct IntegerLiteral {
+    pub value: i64,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FloatLiteral {
+    pub value: f64,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct BoolLiteral {
+    pub value: bool,
+}
+
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct BinaryExpression<'a> {
+    pub operator: BinaryOperator,
+    pub left: Box<Expression<'a>>,
+    pub right: Box<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum BinaryOperator {
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division,
+    Remainder,
+    Exponent,
+    Equal,
+    NotEqual,
+    Greater,
+    Less,
+    GreaterOrEqual,
+    LessOrEqual,
+    And,
+    Or,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct UnaryExpression<'a> {
+    pub operator: UnaryOperator,
+    pub expression: Box<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum UnaryOperator {
+    Not,
+    Negative,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct FunctionCall<'a> {
+    pub function_name: Identifier<'a>,
+    pub arguments: Vec<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct IndexExpression<'a> {
+    pub base: Box<Expression<'a>>,
+    pub index: Box<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct MemberAccessExpression<'a> {
+    pub base: Box<Expression<'a>>,
+    pub member: Identifier<'a>,
+}
