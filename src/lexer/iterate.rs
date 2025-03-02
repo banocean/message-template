@@ -20,7 +20,8 @@ macro_rules! chars_to_tokens {
             )*
             $(
                 $x2 => {
-                    if $self.input.next().second() == Some($n) {
+                    if $self.input.peek().map(|(_, v)| v) == Some(&$n) {
+                        $self.input.next();
                         Token::$y2
                     } else {
                         Token::$z2
@@ -144,7 +145,6 @@ impl<'a> Iterator for Lexer<'a> {
                         ))
                     }
 
-                    self.next();
                     self.is_code_block_open = false;
 
                     Token::CodeBlockClose
