@@ -168,7 +168,10 @@ impl<'a> Iterator for Lexer<'a> {
                         "let" => Token::Let,
                         "in" => Token::In,
                         "if" => Token::If,
+                        "return" => Token::Return,
                         "else" => Token::Else,
+                        "break" => Token::Break,
+                        "continue" => Token::Continue,
                         _ => Token::Ident(name)
                     }
                 }
@@ -220,11 +223,12 @@ mod tests {
 
     #[test]
     fn test_keywords() {
-        let mut lexer = Lexer::new("{{ true }}");
+        let mut lexer = Lexer::new("{{ !true }}");
         assert_eq!(
             lexer.try_collect().unwrap(),
             vec![
                 Token::CodeBlockOpen,
+                Token::Not,
                 Token::Bool(true),
                 Token::CodeBlockClose
             ]
