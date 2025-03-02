@@ -46,8 +46,7 @@ pub struct DisplayStatement<'a> {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Scope<'a>(Vec<ProgramFlow<'a>>);
-
+pub struct Scope<'a>(pub Vec<ProgramFlow<'a>>);
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression<'a> {
@@ -92,7 +91,6 @@ pub struct FloatLiteral {
 pub struct BoolLiteral {
     pub value: bool,
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpression<'a> {

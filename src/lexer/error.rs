@@ -1,14 +1,14 @@
 use std::error::Error;
-use std::fmt;
 use std::num::{ParseFloatError, ParseIntError};
+use std::{char, fmt};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TokenizationError {
     kind: TokenizationErrorKind,
     backtrace: Backtrace,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenizationErrorKind {
     InvalidChar(char),
     UnexpectedEndOfInput,
@@ -16,7 +16,7 @@ pub enum TokenizationErrorKind {
     ParseFloat(ParseFloatError),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Backtrace {
     position: usize,
 }
@@ -43,7 +43,7 @@ impl fmt::Display for TokenizationError {
 impl Error for TokenizationError {
     fn description(&self) -> &str {
         match &self.kind {
-            TokenizationErrorKind::InvalidChar(char) => "Invalid character in code block",
+            TokenizationErrorKind::InvalidChar(_) => "Invalid character in code block",
             TokenizationErrorKind::UnexpectedEndOfInput => "End of input in middle of code block",
             TokenizationErrorKind::ParseInteger(error) => error.description(),
             TokenizationErrorKind::ParseFloat(error) => error.description(),
