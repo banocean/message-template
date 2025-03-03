@@ -6,43 +6,24 @@ pub enum ProgramFlow<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement<'a> {
-    Let(LetStatement<'a>),
-    For(ForStatement<'a>),
-    If(IfStatement<'a>),
-    Return(ReturnStatement<'a>),
+    Let {
+        identifier: Identifier<'a>,
+        expression: Expression<'a>,
+    },
+    For {
+        identifier: Identifier<'a>,
+        iterable: Expression<'a>,
+        body: Scope<'a>,
+    },
+    If {
+        condition: Expression<'a>,
+        then_block: Scope<'a>,
+        else_block: Option<Scope<'a>>,
+    },
+    Return(Option<Expression<'a>>),
     Break,
     Continue,
-    Display(DisplayStatement<'a>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct LetStatement<'a> {
-    pub identifier: Identifier<'a>,
-    pub expression: Expression<'a>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ForStatement<'a> {
-    pub identifier: Identifier<'a>,
-    pub iterable: Expression<'a>,
-    pub body: Scope<'a>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct IfStatement<'a> {
-    pub condition: Expression<'a>,
-    pub then_block: Scope<'a>,
-    pub else_block: Option<Scope<'a>>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct ReturnStatement<'a> {
-    pub expression: Option<Expression<'a>>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct DisplayStatement<'a> {
-    pub expression: Expression<'a>,
+    Display(Expression<'a>),
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -107,10 +107,10 @@ impl<'a> Parser<'a> {
         self.consume_token(TokenType::Assign)?;
         let expression = self.parse_expression()?;
         self.consume_token(TokenType::CodeBlockClose)?;
-        Ok(Statement::Let(LetStatement {
+        Ok(Statement::Let {
             identifier,
             expression,
-        }))
+        })
     }
 
     fn parse_for_statement(&mut self) -> Result<Statement<'a>, GeneralError> {
@@ -120,11 +120,11 @@ impl<'a> Parser<'a> {
         let iterable = self.parse_expression()?;
         self.consume_token(TokenType::CodeBlockClose)?;
         let body = self.parse_scope()?;
-        Ok(Statement::For(ForStatement {
+        Ok(Statement::For {
             identifier,
             iterable,
             body,
-        }))
+        })
     }
 
     fn parse_if_statement(&mut self) -> Result<Statement<'a>, GeneralError> {
@@ -140,11 +140,11 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        Ok(Statement::If(IfStatement {
+        Ok(Statement::If {
             condition,
             then_block,
             else_block,
-        }))
+        })
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement<'a>, GeneralError> {
@@ -155,7 +155,7 @@ impl<'a> Parser<'a> {
             None
         };
         self.consume_token(TokenType::CodeBlockClose)?;
-        Ok(Statement::Return(ReturnStatement { expression }))
+        Ok(Statement::Return(expression))
     }
 
     fn parse_break_statement(&mut self) -> Result<Statement<'a>, GeneralError> {
@@ -173,7 +173,7 @@ impl<'a> Parser<'a> {
     fn parse_display_statement(&mut self) -> Result<Statement<'a>, GeneralError> {
         let expression = self.parse_expression()?;
         self.consume_token(TokenType::CodeBlockClose)?;
-        Ok(Statement::Display(DisplayStatement { expression }))
+        Ok(Statement::Display(expression))
     }
 
     fn parse_expression(&mut self) -> Result<Expression<'a>, GeneralError> {
