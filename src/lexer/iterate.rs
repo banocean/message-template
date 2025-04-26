@@ -154,8 +154,9 @@ impl<'a> Iterator for Lexer<'a> {
                 }
                 'a'..='z' | 'A'..='Z' => {
                     offset += 1;
-                    while let Some((_, char)) = self.input.next() {
+                    while let Some(char) = self.look_ahead() {
                         if !char.is_alphanumeric() { break; }
+                        self.input.next();
                         offset += 1;
                     }
 
@@ -176,7 +177,8 @@ impl<'a> Iterator for Lexer<'a> {
                     }
                 }
                 '"' => {
-                    while let Some((_, char)) = self.input.next() {
+                    while let Some(char) = self.look_ahead() {
+                        self.input.next();
                         if char == '"' {
                             break;
                         }
@@ -187,12 +189,13 @@ impl<'a> Iterator for Lexer<'a> {
                 '0'..='9' => {
                     offset += 1;
                     let mut is_float = false;
-                    while let Some((_, char)) = self.input.next() {
+                    while let Some(char) = self.look_ahead() {
                         if !char.is_ascii_digit() {
                             if char == '.' {
                                 is_float = true
                             } else { break }
                         }
+                        self.input.next();
                         offset += 1;
                     }
 
