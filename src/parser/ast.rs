@@ -17,6 +17,7 @@ pub enum Statement<'a> {
     },
     If {
         condition: Expression<'a>,
+        else_if_blocks: Vec<(Expression<'a>, Scope<'a>)>,
         then_block: Scope<'a>,
         else_block: Option<Scope<'a>>,
     },

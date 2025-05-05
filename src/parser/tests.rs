@@ -2,9 +2,9 @@ use crate::{
     error::GeneralError,
     lexer::iterate::Lexer,
     parser::ast::{
-        BinaryExpression, BinaryOperator, BoolLiteral, DisplayStatement, Expression, FunctionCall,
-        Identifier, IntegerLiteral, Literal, ProgramFlow, ReturnStatement, Statement,
-        StringLiteral, UnaryExpression, UnaryOperator,
+        BinaryExpression, BinaryOperator, BoolLiteral, Expression, FunctionCall, Identifier,
+        IntegerLiteral, Literal, ProgramFlow, Statement, StringLiteral, UnaryExpression,
+        UnaryOperator,
     },
 };
 
@@ -90,6 +90,7 @@ fn test_parse_if_statement() {
     let input = "{{ if true }}{{ 0 }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
         condition: Expression::Literal(Literal::Bool(BoolLiteral { value: true })),
+        else_if_blocks: vec![],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
             Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
         ))]),
@@ -103,6 +104,7 @@ fn test_parse_if_else_statement() {
     let input = "{{ if false }}{{ 0 }}{{ else }}{{ 2 }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
         condition: Expression::Literal(Literal::Bool(BoolLiteral { value: false })),
+        else_if_blocks: vec![],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
             Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
         ))]),
@@ -211,8 +213,10 @@ fn test_nested_scopes_with_end() {
     let input = "{{ if true }}{{ if false }}{{ 0 }}{{ end }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
         condition: Expression::Literal(Literal::Bool(BoolLiteral { value: true })),
+        else_if_blocks: vec![],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::If {
             condition: Expression::Literal(Literal::Bool(BoolLiteral { value: false })),
+            else_if_blocks: vec![],
             then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
                 Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
             ))]),

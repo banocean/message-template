@@ -8,10 +8,18 @@ pub struct Parser<'a> {
     tokens: Peekable<Lexer<'a>>,
 }
 
-#[derive(Debug)]
-enum Enable<T> {
-    Continue(T),
+#[derive(Debug, PartialEq)]
+enum ScopeEnding<'a> {
     End,
+    EOF,
+    ElseIf(Expression<'a>),
+    Else,
+}
+
+#[derive(Debug)]
+enum Enable<'a, T> {
+    Continue(T),
+    End(ScopeEnding<'a>),
 }
 
 impl<'a> Parser<'a> {
@@ -27,10 +35,10 @@ impl<'a> Parser<'a> {
 
     fn parse_scope(&mut self) -> Result<Scope<'a>, GeneralError> {
         let mut program_flow = Vec::new();
-        while let Some(_) = self.tokens.peek() {
+        while self.tokens.peek().is_some() {
             match self.parse_program_flow()? {
                 Enable::Continue(flow) => program_flow.push(flow),
-                Enable::End => break,
+                _ => break,
             }
         }
         Ok(Scope(program_flow))
@@ -48,7 +56,7 @@ impl<'a> Parser<'a> {
                         Enable::Continue(statement) => {
                             Ok(Enable::Continue(ProgramFlow::Statement(statement)))
                         }
-                        Enable::End => Ok(Enable::End),
+                        Enable::End(ending) => Ok(Enable::End(ending)),
                     };
                     result
                 }
@@ -76,7 +84,12 @@ impl<'a> Parser<'a> {
             TokenType::End => {
                 self.tokens.next();
                 self.consume_token(TokenType::CodeBlockClose)?;
-                return Ok(Enable::End);
+                return Ok(Enable::End(ScopeEnding::End));
+            }
+            TokenType::Else => {
+                self.tokens.next();
+                self.consume_token(TokenType::CodeBlockClose)?;
+                return Ok(Enable::End(ScopeEnding::End));
             }
             TokenType::Let => self.parse_let_statement()?,
             TokenType::For => self.parse_for_statement()?,
@@ -140,8 +153,10 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
+
         Ok(Statement::If {
             condition,
+            else_if_blocks: vec![],
             then_block,
             else_block,
         })
