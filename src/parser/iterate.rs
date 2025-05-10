@@ -8,7 +8,7 @@ pub struct Parser<'a> {
     tokens: Peekable<Lexer<'a>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 enum ScopeEnding<'a> {
     End,
     EOF,
@@ -30,56 +30,64 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(mut self) -> Result<Scope<'a>, GeneralError> {
-        self.parse_scope()
+        self.parse_scope().map(|(s, _)| s)
     }
 
-    fn parse_scope(&mut self) -> Result<Scope<'a>, GeneralError> {
+    fn parse_scope<'b>(&mut self) -> Result<(Scope<'a>, ScopeEnding<'a>), GeneralError> {
         let mut program_flow = Vec::new();
-        while self.tokens.peek().is_some() {
-            match self.parse_program_flow()? {
+        while let Some(flow) = self.parse_program_flow() {
+            match flow? {
                 Enable::Continue(flow) => program_flow.push(flow),
-                _ => break,
+                Enable::End(ScopeEnding::End) => return Ok((Scope(program_flow), ScopeEnding::End)),
+                Enable::End(ScopeEnding::Else) => return Ok((Scope(program_flow), ScopeEnding::Else)),
+                Enable::End(ScopeEnding::ElseIf(statement)) => {
+                    return Ok((Scope(program_flow), ScopeEnding::ElseIf(statement.clone())))
+                }
+                _ => break
             }
         }
-        Ok(Scope(program_flow))
+        Ok((Scope(program_flow), ScopeEnding::EOF))
     }
 
-    fn parse_program_flow(&mut self) -> Result<Enable<ProgramFlow<'a>>, GeneralError> {
+    fn parse_program_flow(&mut self) -> Option<Result<Enable<'a, ProgramFlow<'a>>, GeneralError>> {
         if let Some(result_token) = self.tokens.peek() {
-            let token = result_token
-                .as_ref()
-                .map_err(|err| err.clone().generalize())?;
+            let token = match result_token {
+                Ok(token) => token,
+                Err(err) => return Some(Err(err.clone().generalize()))
+            };
+
             match token {
                 Token::CodeBlockOpen => {
                     self.tokens.next();
-                    let result = match self.parse_statement()? {
-                        Enable::Continue(statement) => {
+                    let result = match self.parse_statement() {
+                        Ok(Enable::Continue(statement)) => {
                             Ok(Enable::Continue(ProgramFlow::Statement(statement)))
                         }
-                        Enable::End(ending) => Ok(Enable::End(ending)),
+                        Ok(Enable::End(ending)) => Ok(Enable::End(ending)),
+                        Err(err) => return Some(Err(err)),
                     };
-                    result
+                    Some(result)
                 }
                 Token::Content(_) => {
                     if let Some(Ok(Token::Content(content))) = self.tokens.next() {
-                        Ok(Enable::Continue(ProgramFlow::Content(content)))
+                        Some(Ok(Enable::Continue(ProgramFlow::Content(content))))
                     } else {
-                        Err(GeneralError::Parser(
+                        Some(Err(GeneralError::Parser(
                             "Unexpected error reading content".to_string(),
-                        ))
+                        )))
                     }
                 }
-                _ => Err(GeneralError::Parser(format!(
+                _ => Some(Err(GeneralError::Parser(format!(
                     "Unexpected token for program flow: {:?}",
                     token
-                ))),
+                )))),
             }
         } else {
-            Err(GeneralError::Parser("Unexpected end of input".to_string()))
+            None
         }
     }
 
-    fn parse_statement(&mut self) -> Result<Enable<Statement<'a>>, GeneralError> {
+    fn parse_statement(&mut self) -> Result<Enable<'a, Statement<'a>>, GeneralError> {
         Ok(Enable::Continue(match self.peek_token_type()? {
             TokenType::End => {
                 self.tokens.next();
@@ -89,7 +97,7 @@ impl<'a> Parser<'a> {
             TokenType::Else => {
                 self.tokens.next();
                 self.consume_token(TokenType::CodeBlockClose)?;
-                return Ok(Enable::End(ScopeEnding::End));
+                return Ok(Enable::End(ScopeEnding::Else));
             }
             TokenType::Let => self.parse_let_statement()?,
             TokenType::For => self.parse_for_statement()?,
@@ -132,7 +140,7 @@ impl<'a> Parser<'a> {
         self.consume_token(TokenType::In)?;
         let iterable = self.parse_expression()?;
         self.consume_token(TokenType::CodeBlockClose)?;
-        let body = self.parse_scope()?;
+        let (body, _) = self.parse_scope()?;
         Ok(Statement::For {
             identifier,
             iterable,
@@ -144,19 +152,36 @@ impl<'a> Parser<'a> {
         self.consume_token(TokenType::If)?;
         let condition = self.parse_expression()?;
         self.consume_token(TokenType::CodeBlockClose)?;
-        let then_block = self.parse_scope()?;
-        let else_block = if self.peek_token_type() == Ok(TokenType::Else) {
-            todo!("Make parse scope end for then block with else");
-            self.consume_token(TokenType::Else)?;
-            self.consume_token(TokenType::CodeBlockClose)?;
-            Some(self.parse_scope()?)
-        } else {
-            None
+        let (then_block, ending) = self.parse_scope()?;
+
+        let mut else_if_blocks = vec![];
+        let mut else_block = None;
+
+        if let ScopeEnding::ElseIf(expression) = ending {
+            let mut expression = expression;
+            loop {
+                let (scope, ending) = self.parse_scope()?;
+                else_if_blocks.push((expression, scope));
+
+                if let ScopeEnding::ElseIf(expr) = ending {
+                    expression = expr
+                } else if let ScopeEnding::Else = ending {
+                    let (scope, _) = self.parse_scope()?;
+                    else_block = Some(scope);
+                    break;
+                } else {
+                    break;
+                };
+
+            }
+        } else if let ScopeEnding::Else = ending {
+            let (scope, _) = self.parse_scope()?;
+            else_block = Some(scope)
         };
 
         Ok(Statement::If {
             condition,
-            else_if_blocks: vec![],
+            else_if_blocks,
             then_block,
             else_block,
         })

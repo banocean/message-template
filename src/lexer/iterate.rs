@@ -95,7 +95,7 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Result<Token<'a>, TokenizationError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (position, char) = self.input.next()?;
+        let (mut position, mut char) = self.input.next()?;
         let mut offset = 0usize;
 
         Some(Ok(if !self.is_code_block_open {
@@ -115,6 +115,10 @@ impl<'a> Iterator for Lexer<'a> {
                 Token::Content(self.get_content(position, offset))
             }
         } else {
+            while char.is_whitespace() {
+                (position, char) = self.input.next()?;
+            }
+
             chars_to_tokens!(self, char, position, {
                 '/' => Division,
                 '%' => Remainder,
