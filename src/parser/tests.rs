@@ -2,14 +2,14 @@ use crate::{
     error::GeneralError,
     lexer::iterate::Lexer,
     parser::ast::{
-        BinaryExpression, BinaryOperator, BoolLiteral, Expression, FunctionCall, Identifier,
-        IntegerLiteral, Literal, ProgramFlow, Statement, StringLiteral, UnaryExpression,
+        BinaryExpression, BinaryOperator, Expression, FunctionCall, Identifier,
+        Literal, ProgramFlow, Statement, UnaryExpression,
         UnaryOperator,
     },
 };
 use super::{ast::Scope, iterate::Parser};
 
-pub fn parse<'a>(lexer: Lexer<'a>) -> Result<Scope<'a>, GeneralError> {
+pub fn parse(lexer: Lexer) -> Result<Scope, GeneralError> {
     Parser::new(lexer).parse()
 }
 
@@ -30,7 +30,7 @@ fn test_parse_let_statement() {
     let input = "{{ let x = 122 }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Let {
         identifier: Identifier { name: "x" },
-        expression: Expression::Literal(Literal::Integer(IntegerLiteral { value: 122 })),
+        expression: Expression::Literal(Literal::Integer(122)),
     })]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
 }
@@ -48,7 +48,7 @@ fn test_parse_display_statement_identifier() {
 fn test_parse_display_statement_literal() {
     let input = "{{ \"hello\" }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Display(
-        Expression::Literal(Literal::String(StringLiteral { value: "hello" })),
+        Expression::Literal(Literal::String("hello")),
     ))]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
 }
@@ -59,12 +59,8 @@ fn test_parse_binary_expression() {
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Display(
         Expression::Binary(BinaryExpression {
             operator: BinaryOperator::Addition,
-            left: Box::new(Expression::Literal(Literal::Integer(IntegerLiteral {
-                value: 0,
-            }))),
-            right: Box::new(Expression::Literal(Literal::Integer(IntegerLiteral {
-                value: 2,
-            }))),
+            left: Box::new(Expression::Literal(Literal::Integer(0))),
+            right: Box::new(Expression::Literal(Literal::Integer(2))),
         }),
     ))]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
@@ -76,9 +72,7 @@ fn test_parse_unary_expression() {
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Display(
         Expression::Unary(UnaryExpression {
             operator: UnaryOperator::Not,
-            expression: Box::new(Expression::Literal(Literal::Bool(BoolLiteral {
-                value: true,
-            }))),
+            expression: Box::new(Expression::Literal(Literal::Bool(true))),
         }),
     ))]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
@@ -88,10 +82,10 @@ fn test_parse_unary_expression() {
 fn test_parse_if_statement() {
     let input = "{{ if true }}{{ 0 }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
-        condition: Expression::Literal(Literal::Bool(BoolLiteral { value: true })),
+        condition: Expression::Literal(Literal::Bool(true)),
         else_if_blocks: vec![],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
-            Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
+            Expression::Literal(Literal::Integer(0)),
         ))]),
         else_block: None,
     })]);
@@ -102,13 +96,13 @@ fn test_parse_if_statement() {
 fn test_parse_if_else_statement() {
     let input = "{{ if false }}{{ 0 }}{{ else }}{{ 2 }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
-        condition: Expression::Literal(Literal::Bool(BoolLiteral { value: false })),
+        condition: Expression::Literal(Literal::Bool(false)),
         else_if_blocks: vec![],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
-            Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
+            Expression::Literal(Literal::Integer(0)),
         ))]),
         else_block: Some(Scope(vec![ProgramFlow::Statement(Statement::Display(
-            Expression::Literal(Literal::Integer(IntegerLiteral { value: 2 })),
+            Expression::Literal(Literal::Integer(2)),
         ))])),
     })]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
@@ -118,34 +112,28 @@ fn test_parse_if_else_statement() {
 fn test_parse_if_else_if_statement() {
     let input = "{{ if false }}{{ 0 }}{{ else if true }}{{ 1 }}{{ else if !true }}{{ 2 }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
-        condition: Expression::Literal(Literal::Bool(BoolLiteral { value: false })),
+        condition: Expression::Literal(Literal::Bool(false)),
         else_if_blocks: vec![
             (
-                Expression::Literal(Literal::Bool(BoolLiteral { value: true })),
+                Expression::Literal(Literal::Bool(true)),
                 Scope(vec![ProgramFlow::Statement(Statement::Display(
-                    Expression::Literal(Literal::Integer(IntegerLiteral { value: 1 })),
+                    Expression::Literal(Literal::Integer(1)),
                 ))])
             ),
             (
                 Expression::Unary(
                     UnaryExpression {
                         operator: UnaryOperator::Not,
-                        expression: Box::new(Expression::Literal(
-                            Literal::Bool(
-                                BoolLiteral {
-                                    value: true,
-                                },
-                            ),
-                        ))
+                        expression: Box::new(Expression::Literal(Literal::Bool(true)))
                     },
                 ),
                 Scope(vec![ProgramFlow::Statement(Statement::Display(
-                    Expression::Literal(Literal::Integer(IntegerLiteral { value: 2 })),
+                    Expression::Literal(Literal::Integer(2)),
                 ))])
             )
         ],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
-            Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
+            Expression::Literal(Literal::Integer(0)),
         ))]),
         else_block: None,
     })]);
@@ -169,7 +157,7 @@ fn test_parse_for_statement() {
 fn test_parse_return_statement_with_value() {
     let input = "{{ return 122 }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Return(Some(
-        Expression::Literal(Literal::Integer(IntegerLiteral { value: 122 })),
+        Expression::Literal(Literal::Integer(122)),
     )))]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
 }
@@ -214,8 +202,8 @@ fn test_parse_function_call_with_args() {
         Expression::FunctionCall(FunctionCall {
             function_name: Identifier { name: "func" },
             arguments: vec![
-                Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
-                Expression::Literal(Literal::String(StringLiteral { value: "hello" })),
+                Expression::Literal(Literal::Integer(0)),
+                Expression::Literal(Literal::String("hello")),
             ],
         }),
     ))]);
@@ -228,17 +216,11 @@ fn test_operator_precedence() {
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Display(
         Expression::Binary(BinaryExpression {
             operator: BinaryOperator::Addition,
-            left: Box::new(Expression::Literal(Literal::Integer(IntegerLiteral {
-                value: 0,
-            }))),
+            left: Box::new(Expression::Literal(Literal::Integer(0))),
             right: Box::new(Expression::Binary(BinaryExpression {
                 operator: BinaryOperator::Multiplication,
-                left: Box::new(Expression::Literal(Literal::Integer(IntegerLiteral {
-                    value: 2,
-                }))),
-                right: Box::new(Expression::Literal(Literal::Integer(IntegerLiteral {
-                    value: 3,
-                }))),
+                left: Box::new(Expression::Literal(Literal::Integer(2))),
+                right: Box::new(Expression::Literal(Literal::Integer(3))),
             })),
         }),
     ))]);
@@ -249,13 +231,13 @@ fn test_operator_precedence() {
 fn test_nested_scopes_with_end() {
     let input = "{{ if true }}{{ if false }}{{ 0 }}{{ end }}{{ end }}";
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
-        condition: Expression::Literal(Literal::Bool(BoolLiteral { value: true })),
+        condition: Expression::Literal(Literal::Bool(true)),
         else_if_blocks: vec![],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::If {
-            condition: Expression::Literal(Literal::Bool(BoolLiteral { value: false })),
+            condition: Expression::Literal(Literal::Bool(false)),
             else_if_blocks: vec![],
             then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
-                Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
+                Expression::Literal(Literal::Integer(0)),
             ))]),
             else_block: None,
         })]),
@@ -270,9 +252,7 @@ fn test_parse_negative_number() {
     let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::Display(
         Expression::Unary(UnaryExpression {
             operator: UnaryOperator::Negative,
-            expression: Box::new(Expression::Literal(Literal::Integer(IntegerLiteral {
-                value: 11,
-            }))),
+            expression: Box::new(Expression::Literal(Literal::Integer(11))),
         }),
     ))]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);

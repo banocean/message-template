@@ -342,10 +342,10 @@ impl<'a> Parser<'a> {
     fn parse_literal(&mut self) -> Result<Literal<'a>, GeneralError> {
         if let Some(Ok(token)) = self.tokens.next() {
             match token {
-                Token::String(value) => Ok(Literal::String(StringLiteral { value })),
-                Token::Integer(value) => Ok(Literal::Integer(IntegerLiteral { value })),
-                Token::Float(value) => Ok(Literal::Float(FloatLiteral { value })),
-                Token::Bool(value) => Ok(Literal::Bool(BoolLiteral { value })),
+                Token::String(value) => Ok(Literal::String(value)),
+                Token::Integer(value) => Ok(Literal::Integer(value)),
+                Token::Float(value) => Ok(Literal::Float(value)),
+                Token::Bool(value) => Ok(Literal::Bool(value)),
                 _ => Err(GeneralError::Parser(format!(
                     "Expected literal, found {:?}",
                     token

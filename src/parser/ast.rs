@@ -48,30 +48,10 @@ pub struct Identifier<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Literal<'a> {
-    String(StringLiteral<'a>),
-    Integer(IntegerLiteral),
-    Float(FloatLiteral),
-    Bool(BoolLiteral),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct StringLiteral<'a> {
-    pub value: &'a str,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct IntegerLiteral {
-    pub value: i64,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct FloatLiteral {
-    pub value: f64,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct BoolLiteral {
-    pub value: bool,
+    String(&'a str),
+    Integer(i64),
+    Float(f64),
+    Bool(bool),
 }
 
 #[derive(Debug, PartialEq, Clone)]
