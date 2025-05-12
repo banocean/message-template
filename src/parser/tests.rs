@@ -7,7 +7,6 @@ use crate::{
         UnaryOperator,
     },
 };
-
 use super::{ast::Scope, iterate::Parser};
 
 pub fn parse<'a>(lexer: Lexer<'a>) -> Result<Scope<'a>, GeneralError> {
@@ -109,8 +108,46 @@ fn test_parse_if_else_statement() {
             Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
         ))]),
         else_block: Some(Scope(vec![ProgramFlow::Statement(Statement::Display(
-            Expression::Literal(Literal::Integer(IntegerLiteral { value: 1 })),
+            Expression::Literal(Literal::Integer(IntegerLiteral { value: 2 })),
         ))])),
+    })]);
+    assert_eq!(parse_program(input).unwrap(), expected_scope);
+}
+
+#[test]
+fn test_parse_if_else_if_statement() {
+    let input = "{{ if false }}{{ 0 }}{{ else if true }}{{ 1 }}{{ else if !true }}{{ 2 }}{{ end }}";
+    let expected_scope = Scope(vec![ProgramFlow::Statement(Statement::If {
+        condition: Expression::Literal(Literal::Bool(BoolLiteral { value: false })),
+        else_if_blocks: vec![
+            (
+                Expression::Literal(Literal::Bool(BoolLiteral { value: true })),
+                Scope(vec![ProgramFlow::Statement(Statement::Display(
+                    Expression::Literal(Literal::Integer(IntegerLiteral { value: 1 })),
+                ))])
+            ),
+            (
+                Expression::Unary(
+                    UnaryExpression {
+                        operator: UnaryOperator::Not,
+                        expression: Box::new(Expression::Literal(
+                            Literal::Bool(
+                                BoolLiteral {
+                                    value: true,
+                                },
+                            ),
+                        ))
+                    },
+                ),
+                Scope(vec![ProgramFlow::Statement(Statement::Display(
+                    Expression::Literal(Literal::Integer(IntegerLiteral { value: 2 })),
+                ))])
+            )
+        ],
+        then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
+            Expression::Literal(Literal::Integer(IntegerLiteral { value: 0 })),
+        ))]),
+        else_block: None,
     })]);
     assert_eq!(parse_program(input).unwrap(), expected_scope);
 }

@@ -96,8 +96,25 @@ impl<'a> Parser<'a> {
             }
             TokenType::Else => {
                 self.tokens.next();
-                self.consume_token(TokenType::CodeBlockClose)?;
-                return Ok(Enable::End(ScopeEnding::Else));
+                let token = match self.tokens.next() {
+                    Some(Ok(token)) => token,
+                    Some(Err(err)) => return Err(err.generalize()),
+                    None => return Err(GeneralError::Parser(
+                        "Unexpected end of input after else statement has been opened".to_string(),
+                    ))
+                };
+
+                return if token == Token::If {
+                    let expr = self.parse_expression()?;
+                    self.consume_token(TokenType::CodeBlockClose)?;
+                    Ok(Enable::End(ScopeEnding::ElseIf(expr)))
+                } else if token == Token::CodeBlockClose {
+                    Ok(Enable::End(ScopeEnding::Else))
+                } else {
+                    Err(GeneralError::Parser(
+                        "Unexpected token after else, expected '}}' or 'if'".to_string(),
+                    ))
+                }
             }
             TokenType::Let => self.parse_let_statement()?,
             TokenType::For => self.parse_for_statement()?,
