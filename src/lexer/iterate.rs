@@ -1,7 +1,7 @@
 use crate::lexer::error::{TokenizationError, TokenizationErrorKind};
 use crate::lexer::tokens::Token;
-use crate::utils::Second;
-use std::iter::{Enumerate, Peekable};
+use crate::utils::{DoublePeekable, Second};
+use std::iter::Enumerate;
 use std::str::Chars;
 
 macro_rules! chars_to_tokens {
@@ -62,7 +62,7 @@ macro_rules! parse_or_error {
 
 pub struct Lexer<'a> {
     input_data: &'a str,
-    input: Peekable<Enumerate<Chars<'a>>>,
+    input: DoublePeekable<Enumerate<Chars<'a>>>,
     is_code_block_open: bool,
 }
 
@@ -70,7 +70,7 @@ impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
             input_data: input,
-            input: input.chars().enumerate().peekable(),
+            input: DoublePeekable::new(input.chars().enumerate()),
             is_code_block_open: false,
         }
     }
@@ -89,6 +89,10 @@ impl<'a> Lexer<'a> {
     fn look_ahead(&mut self) -> Option<char> {
         self.input.peek().map(|d| d.1)
     }
+
+    fn double_look_ahead(&mut self) -> Option<char> {
+        self.input.peek2().map(|d| d.1)
+    }
 }
 
 impl<'a> Iterator for Lexer<'a> {
@@ -104,10 +108,9 @@ impl<'a> Iterator for Lexer<'a> {
                 Token::CodeBlockOpen
             } else {
                 offset += 1;
-                while let Some((_, char)) = self.input.next() {
-                    if char == '{' && self.look_ahead() == Some('{') {
-                        self.next();
-                        return Some(Ok(Token::Content(self.get_content(position, offset))));
+                while let Some(_) = self.input.next() {
+                    if self.look_ahead() == Some('{') && self.double_look_ahead() == Some('{') {
+                        return Some(Ok(Token::Content(self.get_content(position, offset + 1))));
                     }
                     offset += 1;
                 }
