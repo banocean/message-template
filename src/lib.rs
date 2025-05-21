@@ -17,4 +17,5 @@ pub mod lexer {
 pub(crate) mod runtime {
     pub mod value;
     pub mod expression;
+    pub mod scope;
 }
