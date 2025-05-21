@@ -128,6 +128,8 @@ impl<'a> Iterator for Lexer<'a> {
                 '^' => Exponent,
                 '(' => LeftBracket,
                 ')' => RightBracket,
+                '[' => LeftSquareBracket,
+                ']' => RightSquareBracket,
                 ';' => Semicolon,
                 ',' => Coma,
                 '.' => Dot,

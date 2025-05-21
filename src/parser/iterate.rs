@@ -283,7 +283,7 @@ impl<'a> Parser<'a> {
 
     fn parse_primary_expression(&mut self) -> Result<Expression<'a>, GeneralError> {
         let token_type = self.peek_token_type()?;
-        match token_type {
+        let mut expression = match token_type {
             TokenType::Ident => {
                 let identifier = self.parse_identifier()?;
                 if self.peek_token_type() == Ok(TokenType::LeftBracket) {
@@ -305,7 +305,32 @@ impl<'a> Parser<'a> {
                 "Unexpected token for expression: {:?}",
                 token_type
             ))),
+        }?;
+
+        loop {
+            match self.peek_token_type() {
+                Ok(TokenType::Dot) => {
+                    self.tokens.next();
+                    let member = self.parse_identifier()?;
+                    expression = Expression::MemberAccess(MemberAccessExpression {
+                        base: Box::new(expression),
+                        member,
+                    });
+                }
+                Ok(TokenType::LeftSquareBracket) => {
+                    self.tokens.next();
+                    let index_expression = self.parse_expression()?;
+                    self.consume_token(TokenType::RightSquareBracket)?;
+                    expression = Expression::Index(IndexExpression {
+                        base: Box::new(expression),
+                        index: Box::new(index_expression),
+                    });
+                }
+                _ => break,
+            }
         }
+
+        Ok(expression)
     }
 
     fn parse_function_call(
