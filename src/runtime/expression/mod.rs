@@ -1,12 +1,12 @@
 mod binary;
 
 use std::collections::HashMap;
+use crate::Context;
 use crate::parser::ast::{Expression, Identifier, IndexExpression, Literal, MemberAccessExpression, UnaryExpression, UnaryOperator};
 use crate::runtime::expression::binary::evaluate_binary;
 use crate::runtime::value::Value;
 
-pub type Data<'a> = (&'a HashMap<String, Value>, &'a HashMap<String, Value>);
-pub type DataMut<'a> = (&'a HashMap<String, Value>, &'a mut HashMap<String, Value>);
+pub type Data<'a> = (&'a Context<'a>, &'a HashMap<String, Value>);
 
 fn literal_to_value(literal: &Literal,) -> Value {
     match literal {

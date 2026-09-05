@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::Context;
 use crate::parser::ast::{Expression, ProgramFlow, Scope, Statement};
 use crate::runtime::expression::{evaluate_expression, value_to_bool, Data};
 use crate::runtime::value::Value;
@@ -15,7 +16,7 @@ pub(crate) enum ScopeExecutionResult {
 
 pub(crate) fn execute_scope<'a>(
     scope: &'a Scope<'a>,
-    context: &'a HashMap<String, Value>,
+    context: &'a Context,
     environment: &'a mut HashMap<String, Value>,
 ) -> Result<ScopeExecutionResult, String> {
     let mut accumulated_content = String::new();
@@ -89,7 +90,7 @@ fn execute_if_statement(
     then_block: &Scope,
     else_block: &Option<Scope>,
     else_if_blocks: &Vec<(Expression, Scope)>,
-    context: &HashMap<String, Value>,
+    context: &Context,
     environment: &mut HashMap<String, Value>,
 ) -> Result<ScopeExecutionResult, String> {
     let combined_data: Data = (context, environment);
@@ -97,16 +98,14 @@ fn execute_if_statement(
     let condition_value = evaluate_expression(&condition, combined_data)?;
         if value_to_bool(condition_value) {
             let mut then_environment = HashMap::new();
-            let then_context = environment;
-            execute_scope(&then_block, then_context, &mut then_environment)
+            execute_scope(&then_block, context, &mut then_environment)
         } else {
             for (condition, block) in else_if_blocks{
                 let else_if_condition_value = evaluate_expression(condition, combined_data)?;
                 if let Value::Bool(else_if_condition) = else_if_condition_value {
                     if else_if_condition {
                         let mut else_if_environment = HashMap::new();
-                        let else_if_context = environment;
-                        return execute_scope(block, else_if_context, &mut else_if_environment);
+                        return execute_scope(block, context, &mut else_if_environment);
                     }
                 } else {
                     return Err(format!("Else if condition must be a boolean, but got {:?}", else_if_condition_value));
@@ -115,8 +114,7 @@ fn execute_if_statement(
 
             if let Some(else_branch) = else_block {
                 let mut else_environment = HashMap::new();
-                let else_context = environment;
-                execute_scope(else_branch, else_context, &mut else_environment)
+                execute_scope(else_branch, context, &mut else_environment)
             } else {
                 Ok(ScopeExecutionResult::Normal(String::new()))
             }

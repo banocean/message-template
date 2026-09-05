@@ -42,3 +42,31 @@ impl std::fmt::Display for Value {
         }
     }
 }
+
+#[cfg(feature = "context")]
+impl From<serde_json::Value> for Value {
+    fn from(value: serde_json::Value) -> Self {
+        match value {
+            serde_json::Value::Null => Value::Null,
+            serde_json::Value::Bool(bool) => Value::Bool(bool),
+            serde_json::Value::Number(number) => {
+                if number.is_f64() {
+                    Value::Float(number.as_f64().unwrap())
+                } else if number.is_i64() {
+                    Value::Integer(number.as_i64().unwrap())
+                } else if number.is_u64() && number.as_u64().unwrap() <= i64::MAX as u64 {
+                    Value::Integer(number.as_u64().unwrap() as i64)
+                } else {
+                    Value::Integer(i64::MAX)
+                }
+            }
+            serde_json::Value::String(string) => Value::String(string),
+            serde_json::Value::Array(array) => {
+                Value::Array(array.into_iter().map(Value::from).collect())
+            },
+            serde_json::Value::Object(object) => {
+                Value::Object(object.into_iter().map(|(key, value)| (key, Value::from(value))).collect())
+            }
+        }
+    }
+}

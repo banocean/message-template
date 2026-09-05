@@ -1,4 +1,5 @@
 pub mod error;
+pub(crate) mod context;
 mod utils;
 
 pub mod parser {
