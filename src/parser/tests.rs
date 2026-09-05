@@ -1,13 +1,12 @@
+use super::{ast::Scope, iterate::Parser};
 use crate::{
     error::GeneralError,
     lexer::iterate::Lexer,
     parser::ast::{
-        BinaryExpression, BinaryOperator, Expression, FunctionCall, Identifier,
-        Literal, ProgramFlow, Statement, UnaryExpression,
-        UnaryOperator,
+        BinaryExpression, BinaryOperator, Expression, FunctionCall, Identifier, Literal,
+        ProgramFlow, Statement, UnaryExpression, UnaryOperator,
     },
 };
-use super::{ast::Scope, iterate::Parser};
 
 pub fn parse(lexer: Lexer) -> Result<Scope, GeneralError> {
     Parser::new(lexer).parse()
@@ -118,19 +117,17 @@ fn test_parse_if_else_if_statement() {
                 Expression::Literal(Literal::Bool(true)),
                 Scope(vec![ProgramFlow::Statement(Statement::Display(
                     Expression::Literal(Literal::Integer(1)),
-                ))])
+                ))]),
             ),
             (
-                Expression::Unary(
-                    UnaryExpression {
-                        operator: UnaryOperator::Not,
-                        expression: Box::new(Expression::Literal(Literal::Bool(true)))
-                    },
-                ),
+                Expression::Unary(UnaryExpression {
+                    operator: UnaryOperator::Not,
+                    expression: Box::new(Expression::Literal(Literal::Bool(true))),
+                }),
                 Scope(vec![ProgramFlow::Statement(Statement::Display(
                     Expression::Literal(Literal::Integer(2)),
-                ))])
-            )
+                ))]),
+            ),
         ],
         then_block: Scope(vec![ProgramFlow::Statement(Statement::Display(
             Expression::Literal(Literal::Integer(0)),

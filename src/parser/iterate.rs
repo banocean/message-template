@@ -38,12 +38,16 @@ impl<'a> Parser<'a> {
         while let Some(flow) = self.parse_program_flow() {
             match flow? {
                 Enable::Continue(flow) => program_flow.push(flow),
-                Enable::End(ScopeEnding::End) => return Ok((Scope(program_flow), ScopeEnding::End)),
-                Enable::End(ScopeEnding::Else) => return Ok((Scope(program_flow), ScopeEnding::Else)),
+                Enable::End(ScopeEnding::End) => {
+                    return Ok((Scope(program_flow), ScopeEnding::End))
+                }
+                Enable::End(ScopeEnding::Else) => {
+                    return Ok((Scope(program_flow), ScopeEnding::Else))
+                }
                 Enable::End(ScopeEnding::ElseIf(statement)) => {
                     return Ok((Scope(program_flow), ScopeEnding::ElseIf(statement.clone())))
                 }
-                _ => break
+                _ => break,
             }
         }
         Ok((Scope(program_flow), ScopeEnding::EOF))
@@ -53,7 +57,7 @@ impl<'a> Parser<'a> {
         if let Some(result_token) = self.tokens.peek() {
             let token = match result_token {
                 Ok(token) => token,
-                Err(err) => return Some(Err(err.clone().generalize()))
+                Err(err) => return Some(Err(err.clone().generalize())),
             };
 
             match token {
@@ -99,9 +103,12 @@ impl<'a> Parser<'a> {
                 let token = match self.tokens.next() {
                     Some(Ok(token)) => token,
                     Some(Err(err)) => return Err(err.generalize()),
-                    None => return Err(GeneralError::Parser(
-                        "Unexpected end of input after else statement has been opened".to_string(),
-                    ))
+                    None => {
+                        return Err(GeneralError::Parser(
+                            "Unexpected end of input after else statement has been opened"
+                                .to_string(),
+                        ))
+                    }
                 };
 
                 return if token == Token::If {
@@ -114,7 +121,7 @@ impl<'a> Parser<'a> {
                     Err(GeneralError::Parser(
                         "Unexpected token after else, expected '}}' or 'if'".to_string(),
                     ))
-                }
+                };
             }
             TokenType::Let => self.parse_let_statement()?,
             TokenType::For => self.parse_for_statement()?,
@@ -189,7 +196,6 @@ impl<'a> Parser<'a> {
                 } else {
                     break;
                 };
-
             }
         } else if let ScopeEnding::Else = ending {
             let (scope, _) = self.parse_scope()?;

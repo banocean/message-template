@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use crate::Context;
 use crate::parser::ast::{Expression, ProgramFlow, Scope, Statement};
 use crate::runtime::expression::{evaluate_expression, value_to_bool, Data};
 use crate::runtime::value::Value;
+use crate::Context;
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ScopeExecutionResult {
@@ -24,15 +24,21 @@ pub(crate) fn execute_scope<'a>(
     for flow in &scope.0 {
         match flow {
             ProgramFlow::Content(content) => accumulated_content.push_str(content),
-            ProgramFlow::Statement(statement) => {
-                match statement {
-                    Statement::Let { identifier, expression } => {
-                        let value = evaluate_expression(&expression, (context, environment))?;
-                        environment.insert(identifier.name.to_string(), value);
-                    }
-                    Statement::For { identifier, iterable, body } => {
-                        let iterable_value = evaluate_expression(iterable, (context, environment))?;
-                        match iterable_value {
+            ProgramFlow::Statement(statement) => match statement {
+                Statement::Let {
+                    identifier,
+                    expression,
+                } => {
+                    let value = evaluate_expression(&expression, (context, environment))?;
+                    environment.insert(identifier.name.to_string(), value);
+                }
+                Statement::For {
+                    identifier,
+                    iterable,
+                    body,
+                } => {
+                    let iterable_value = evaluate_expression(iterable, (context, environment))?;
+                    match iterable_value {
                             Value::Array(arr) => {
                                 for item in arr {
                                     let mut loop_environment = environment.clone();
@@ -48,37 +54,47 @@ pub(crate) fn execute_scope<'a>(
                             }
                             _ => return Err(format!("for loops can only iterate over arrays, {iterable_value:?} is not an array")),
                         }
-                    }
-                    Statement::If {
+                }
+                Statement::If {
+                    condition,
+                    then_block,
+                    else_block,
+                    else_if_blocks,
+                } => {
+                    match execute_if_statement(
                         condition,
                         then_block,
                         else_block,
-                        else_if_blocks
-                    } => {
-                        match execute_if_statement(
-                            condition, then_block, else_block, else_if_blocks, context, environment
-                        )? {
-                            ScopeExecutionResult::Normal(content) => accumulated_content.push_str(&content),
-                            ScopeExecutionResult::Return(value) => return Ok(ScopeExecutionResult::Return(value)),
-                            ScopeExecutionResult::Break => return Ok(ScopeExecutionResult::Break),
-                            ScopeExecutionResult::Continue => return Ok(ScopeExecutionResult::Continue),
+                        else_if_blocks,
+                        context,
+                        environment,
+                    )? {
+                        ScopeExecutionResult::Normal(content) => {
+                            accumulated_content.push_str(&content)
+                        }
+                        ScopeExecutionResult::Return(value) => {
+                            return Ok(ScopeExecutionResult::Return(value))
+                        }
+                        ScopeExecutionResult::Break => return Ok(ScopeExecutionResult::Break),
+                        ScopeExecutionResult::Continue => {
+                            return Ok(ScopeExecutionResult::Continue)
                         }
                     }
-                    Statement::Return(expression) => {
-                        let value = match expression {
-                            Some(expr) => Some(evaluate_expression(&expr, (context, environment))?),
-                            None => None
-                        };
-                        return Ok(ScopeExecutionResult::Return(value));
-                    }
-                    Statement::Break => return Ok(ScopeExecutionResult::Break),
-                    Statement::Continue => return Ok(ScopeExecutionResult::Continue),
-                    Statement::Display(expression) => {
-                        let value = evaluate_expression(expression, (context, environment))?;
-                        accumulated_content.push_str(&format!("{}", value));
-                    }
                 }
-            }
+                Statement::Return(expression) => {
+                    let value = match expression {
+                        Some(expr) => Some(evaluate_expression(&expr, (context, environment))?),
+                        None => None,
+                    };
+                    return Ok(ScopeExecutionResult::Return(value));
+                }
+                Statement::Break => return Ok(ScopeExecutionResult::Break),
+                Statement::Continue => return Ok(ScopeExecutionResult::Continue),
+                Statement::Display(expression) => {
+                    let value = evaluate_expression(expression, (context, environment))?;
+                    accumulated_content.push_str(&format!("{}", value));
+                }
+            },
         }
     }
 
@@ -96,27 +112,30 @@ fn execute_if_statement(
     let combined_data: Data = (context, environment);
 
     let condition_value = evaluate_expression(&condition, combined_data)?;
-        if value_to_bool(condition_value) {
-            let mut then_environment = HashMap::new();
-            execute_scope(&then_block, context, &mut then_environment)
-        } else {
-            for (condition, block) in else_if_blocks{
-                let else_if_condition_value = evaluate_expression(condition, combined_data)?;
-                if let Value::Bool(else_if_condition) = else_if_condition_value {
-                    if else_if_condition {
-                        let mut else_if_environment = HashMap::new();
-                        return execute_scope(block, context, &mut else_if_environment);
-                    }
-                } else {
-                    return Err(format!("Else if condition must be a boolean, but got {:?}", else_if_condition_value));
+    if value_to_bool(condition_value) {
+        let mut then_environment = HashMap::new();
+        execute_scope(&then_block, context, &mut then_environment)
+    } else {
+        for (condition, block) in else_if_blocks {
+            let else_if_condition_value = evaluate_expression(condition, combined_data)?;
+            if let Value::Bool(else_if_condition) = else_if_condition_value {
+                if else_if_condition {
+                    let mut else_if_environment = HashMap::new();
+                    return execute_scope(block, context, &mut else_if_environment);
                 }
-            }
-
-            if let Some(else_branch) = else_block {
-                let mut else_environment = HashMap::new();
-                execute_scope(else_branch, context, &mut else_environment)
             } else {
-                Ok(ScopeExecutionResult::Normal(String::new()))
+                return Err(format!(
+                    "Else if condition must be a boolean, but got {:?}",
+                    else_if_condition_value
+                ));
             }
         }
+
+        if let Some(else_branch) = else_block {
+            let mut else_environment = HashMap::new();
+            execute_scope(else_branch, context, &mut else_environment)
+        } else {
+            Ok(ScopeExecutionResult::Normal(String::new()))
+        }
+    }
 }

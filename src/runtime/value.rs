@@ -63,10 +63,13 @@ impl From<serde_json::Value> for Value {
             serde_json::Value::String(string) => Value::String(string),
             serde_json::Value::Array(array) => {
                 Value::Array(array.into_iter().map(Value::from).collect())
-            },
-            serde_json::Value::Object(object) => {
-                Value::Object(object.into_iter().map(|(key, value)| (key, Value::from(value))).collect())
             }
+            serde_json::Value::Object(object) => Value::Object(
+                object
+                    .into_iter()
+                    .map(|(key, value)| (key, Value::from(value)))
+                    .collect(),
+            ),
         }
     }
 }

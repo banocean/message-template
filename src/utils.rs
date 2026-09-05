@@ -30,7 +30,7 @@ impl<I: Iterator> DoublePeekable<I> {
 
     pub fn peek2(&mut self) -> Option<&I::Item> {
         if self.second_peeked.is_none() {
-            let mut temp_peek = self.iter.peek();
+            let temp_peek = self.iter.peek();
             if temp_peek.is_some() {
                 self.second_peeked = self.iter.next();
             }

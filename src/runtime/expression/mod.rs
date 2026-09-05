@@ -1,15 +1,18 @@
 mod binary;
 
-use std::collections::HashMap;
 use crate::ast::FunctionCall;
-use crate::Context;
-use crate::parser::ast::{Expression, Identifier, IndexExpression, Literal, MemberAccessExpression, UnaryExpression, UnaryOperator};
+use crate::parser::ast::{
+    Expression, Identifier, IndexExpression, Literal, MemberAccessExpression, UnaryExpression,
+    UnaryOperator,
+};
 use crate::runtime::expression::binary::evaluate_binary;
 use crate::runtime::value::Value;
+use crate::Context;
+use std::collections::HashMap;
 
 pub type Data<'a> = (&'a Context<'a>, &'a HashMap<String, Value>);
 
-fn literal_to_value(literal: &Literal,) -> Value {
+fn literal_to_value(literal: &Literal) -> Value {
     match literal {
         Literal::String(s) => Value::String(s.to_string()),
         Literal::Integer(i) => Value::Integer(*i),
@@ -18,32 +21,33 @@ fn literal_to_value(literal: &Literal,) -> Value {
     }
 }
 
-fn get_variable(
-    identifier: &Identifier,
-    (context, environment): Data
-) -> Option<Value> {
-    context.get(identifier.name).or_else(|| environment.get(identifier.name)).cloned()
+fn get_variable(identifier: &Identifier, (context, environment): Data) -> Option<Value> {
+    context
+        .get(identifier.name)
+        .or_else(|| environment.get(identifier.name))
+        .cloned()
 }
 
 fn access_object_member(
     member_access_expression: &MemberAccessExpression,
-    data: Data
+    data: Data,
 ) -> Result<Value, String> {
     let base_value = evaluate_expression(&member_access_expression.base, data)?;
     match base_value {
-        Value::Object(obj) => {
-            obj.get(member_access_expression.member.name).cloned().ok_or_else(||
-                format!("There is no property named '{}'", member_access_expression.member.name)
-            )
-        }
-        _ => Err("You can only access properties of objects".to_string())
+        Value::Object(obj) => obj
+            .get(member_access_expression.member.name)
+            .cloned()
+            .ok_or_else(|| {
+                format!(
+                    "There is no property named '{}'",
+                    member_access_expression.member.name
+                )
+            }),
+        _ => Err("You can only access properties of objects".to_string()),
     }
 }
 
-fn index_array(
-    index_expression: &IndexExpression,
-    data: Data
-) -> Result<Value, String> {
+fn index_array(index_expression: &IndexExpression, data: Data) -> Result<Value, String> {
     let base_value = evaluate_expression(&index_expression.base, data)?;
     let index_value = evaluate_expression(&index_expression.index, data)?;
 
@@ -52,7 +56,11 @@ fn index_array(
             if index >= 0 && index < arr.len() as i64 {
                 Ok(arr[index as usize].clone())
             } else {
-                Err(format!("Index {} out of bounds for array of length {}", index, arr.len()))
+                Err(format!(
+                    "Index {} out of bounds for array of length {}",
+                    index,
+                    arr.len()
+                ))
             }
         }
         _ => Err("Invalid operands for index access".to_string()),
@@ -65,30 +73,25 @@ pub fn value_to_bool(value: Value) -> bool {
         Value::Null => false,
         Value::Integer(i) => i != 0,
         Value::Float(f) => f != 0.0,
-        _ => true
+        _ => true,
     }
 }
 
-fn evaluate_unary(
-    unary_expression: &UnaryExpression,
-    data: Data,
-) -> Result<Value, String> {
+fn evaluate_unary(unary_expression: &UnaryExpression, data: Data) -> Result<Value, String> {
     let value = evaluate_expression(&unary_expression.expression, data)?;
     Ok(match unary_expression.operator {
         UnaryOperator::Not => Value::Bool(!value_to_bool(value)),
-        UnaryOperator::Negative => {
-            match value {
-                Value::Integer(i) => Value::Integer(-i),
-                Value::Float(f) => Value::Float(-f),
-                _ => return Err("You can only use - operator on numbers".to_string())
-            }
-        }
+        UnaryOperator::Negative => match value {
+            Value::Integer(i) => Value::Integer(-i),
+            Value::Float(f) => Value::Float(-f),
+            _ => return Err("You can only use - operator on numbers".to_string()),
+        },
     })
 }
 
 async fn _evaluate_function_call<'a>(
     function_call: &FunctionCall<'a>,
-    data: Data<'a>
+    data: Data<'a>,
 ) -> Result<Value, String> {
     let mut arguments_values = Vec::new();
     for argument in &function_call.arguments {
@@ -96,13 +99,12 @@ async fn _evaluate_function_call<'a>(
     }
 
     let (context, _) = data;
-    context.call(function_call.function_name.name, arguments_values).await
+    context
+        .call(function_call.function_name.name, arguments_values)
+        .await
 }
 
-pub fn evaluate_expression<'a>(
-    expression: &Expression<'a>,
-    data: Data,
-) -> Result<Value, String> {
+pub fn evaluate_expression<'a>(expression: &Expression<'a>, data: Data) -> Result<Value, String> {
     Ok(match expression {
         Expression::Identifier(identifier) => get_variable(identifier, data)
             .ok_or(format!("Undefined variable: {}", identifier.name))?,
@@ -111,7 +113,6 @@ pub fn evaluate_expression<'a>(
         Expression::Unary(unary_expr) => evaluate_unary(unary_expr, data)?,
         Expression::FunctionCall(func_call) => todo!(),
         Expression::Index(index_expr) => index_array(index_expr, data)?,
-        Expression::MemberAccess(member_expr) =>
-            access_object_member(member_expr, data)?
+        Expression::MemberAccess(member_expr) => access_object_member(member_expr, data)?,
     })
 }
