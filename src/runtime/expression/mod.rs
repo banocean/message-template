@@ -1,6 +1,7 @@
 mod binary;
 
 use std::collections::HashMap;
+use crate::ast::FunctionCall;
 use crate::Context;
 use crate::parser::ast::{Expression, Identifier, IndexExpression, Literal, MemberAccessExpression, UnaryExpression, UnaryOperator};
 use crate::runtime::expression::binary::evaluate_binary;
@@ -83,6 +84,19 @@ fn evaluate_unary(
             }
         }
     })
+}
+
+async fn _evaluate_function_call<'a>(
+    function_call: &FunctionCall<'a>,
+    data: Data<'a>
+) -> Result<Value, String> {
+    let mut arguments_values = Vec::new();
+    for argument in &function_call.arguments {
+        arguments_values.push(evaluate_expression(argument, data)?)
+    }
+
+    let (context, _) = data;
+    context.call(function_call.function_name.name, arguments_values).await
 }
 
 pub fn evaluate_expression<'a>(
