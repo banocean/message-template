@@ -28,11 +28,11 @@ fn get_variable(identifier: &Identifier, (context, environment): Data) -> Option
         .cloned()
 }
 
-fn access_object_member(
-    member_access_expression: &MemberAccessExpression,
-    data: Data,
+async fn access_object_member<'a>(
+    member_access_expression: &MemberAccessExpression<'a>,
+    data: Data<'a>,
 ) -> Result<Value, String> {
-    let base_value = evaluate_expression(&member_access_expression.base, data)?;
+    let base_value = Box::pin(evaluate_expression(&member_access_expression.base, data)).await?;
     match base_value {
         Value::Object(obj) => obj
             .get(member_access_expression.member.name)
@@ -47,9 +47,12 @@ fn access_object_member(
     }
 }
 
-fn index_array(index_expression: &IndexExpression, data: Data) -> Result<Value, String> {
-    let base_value = evaluate_expression(&index_expression.base, data)?;
-    let index_value = evaluate_expression(&index_expression.index, data)?;
+async fn index_array<'a>(
+    index_expression: &IndexExpression<'a>,
+    data: Data<'a>,
+) -> Result<Value, String> {
+    let base_value = Box::pin(evaluate_expression(&index_expression.base, data)).await?;
+    let index_value = Box::pin(evaluate_expression(&index_expression.index, data)).await?;
 
     match (base_value, index_value) {
         (Value::Array(arr), Value::Integer(index)) => {
@@ -77,8 +80,11 @@ pub fn value_to_bool(value: Value) -> bool {
     }
 }
 
-fn evaluate_unary(unary_expression: &UnaryExpression, data: Data) -> Result<Value, String> {
-    let value = evaluate_expression(&unary_expression.expression, data)?;
+async fn evaluate_unary<'a>(
+    unary_expression: &UnaryExpression<'a>,
+    data: Data<'a>,
+) -> Result<Value, String> {
+    let value = Box::pin(evaluate_expression(&unary_expression.expression, data)).await?;
     Ok(match unary_expression.operator {
         UnaryOperator::Not => Value::Bool(!value_to_bool(value)),
         UnaryOperator::Negative => match value {
@@ -89,13 +95,13 @@ fn evaluate_unary(unary_expression: &UnaryExpression, data: Data) -> Result<Valu
     })
 }
 
-async fn _evaluate_function_call<'a>(
+async fn evaluate_function_call<'a>(
     function_call: &FunctionCall<'a>,
     data: Data<'a>,
 ) -> Result<Value, String> {
     let mut arguments_values = Vec::new();
     for argument in &function_call.arguments {
-        arguments_values.push(evaluate_expression(argument, data)?)
+        arguments_values.push(Box::pin(evaluate_expression(argument, data)).await?)
     }
 
     let (context, _) = data;
@@ -104,15 +110,20 @@ async fn _evaluate_function_call<'a>(
         .await
 }
 
-pub fn evaluate_expression<'a>(expression: &Expression<'a>, data: Data) -> Result<Value, String> {
+pub async fn evaluate_expression<'a>(
+    expression: &Expression<'a>,
+    data: Data<'a>,
+) -> Result<Value, String> {
     Ok(match expression {
         Expression::Identifier(identifier) => get_variable(identifier, data)
             .ok_or(format!("Undefined variable: {}", identifier.name))?,
         Expression::Literal(literal) => literal_to_value(literal),
-        Expression::Binary(bin_expr) => evaluate_binary(bin_expr, data)?,
-        Expression::Unary(unary_expr) => evaluate_unary(unary_expr, data)?,
-        Expression::FunctionCall(func_call) => todo!(),
-        Expression::Index(index_expr) => index_array(index_expr, data)?,
-        Expression::MemberAccess(member_expr) => access_object_member(member_expr, data)?,
+        Expression::Binary(bin_expr) => evaluate_binary(bin_expr, data).await?,
+        Expression::Unary(unary_expr) => evaluate_unary(unary_expr, data).await?,
+        Expression::FunctionCall(function_call) => {
+            evaluate_function_call(function_call, data).await?
+        }
+        Expression::Index(index_expr) => index_array(index_expr, data).await?,
+        Expression::MemberAccess(member_expr) => access_object_member(member_expr, data).await?,
     })
 }

@@ -14,9 +14,9 @@ pub(crate) enum ScopeExecutionResult {
     Continue,
 }
 
-pub(crate) fn execute_scope<'a>(
+pub(crate) async fn execute_scope<'a>(
     scope: &'a Scope<'a>,
-    context: &'a Context,
+    context: &'a Context<'a>,
     environment: &'a mut HashMap<String, Value>,
 ) -> Result<ScopeExecutionResult, String> {
     let mut accumulated_content = String::new();
@@ -29,7 +29,7 @@ pub(crate) fn execute_scope<'a>(
                     identifier,
                     expression,
                 } => {
-                    let value = evaluate_expression(&expression, (context, environment))?;
+                    let value = evaluate_expression(&expression, (context, environment)).await?;
                     environment.insert(identifier.name.to_string(), value);
                 }
                 Statement::For {
@@ -37,23 +37,23 @@ pub(crate) fn execute_scope<'a>(
                     iterable,
                     body,
                 } => {
-                    let iterable_value = evaluate_expression(iterable, (context, environment))?;
+                    let iterable_value =
+                        evaluate_expression(iterable, (context, environment)).await?;
                     match iterable_value {
-                            Value::Array(arr) => {
-                                for item in arr {
-                                    let mut loop_environment = environment.clone();
-                                    loop_environment.insert(identifier.name.to_string(), item.clone());
-
-                                    match execute_scope(body, &context, &mut loop_environment)? {
-                                        ScopeExecutionResult::Normal(content) => accumulated_content.push_str(&content),
-                                        ScopeExecutionResult::Return(value) => return Ok(ScopeExecutionResult::Return(value)),
-                                        ScopeExecutionResult::Break => break,
-                                        ScopeExecutionResult::Continue => continue,
-                                    }
+                        Value::Array(arr) => {
+                            for item in arr {
+                                let mut loop_environment = environment.clone();
+                                loop_environment.insert(identifier.name.to_string(), item.clone());
+                                match Box::pin(execute_scope(body, &context, &mut loop_environment)).await? {
+                                    ScopeExecutionResult::Normal(content) => accumulated_content.push_str(&content),
+                                    ScopeExecutionResult::Return(value) => return Ok(ScopeExecutionResult::Return(value)),
+                                    ScopeExecutionResult::Break => break,
+                                    ScopeExecutionResult::Continue => continue,
                                 }
                             }
-                            _ => return Err(format!("for loops can only iterate over arrays, {iterable_value:?} is not an array")),
                         }
+                        _ => return Err(format!("for loops can only iterate over arrays, {iterable_value:?} is not an array")),
+                    }
                 }
                 Statement::If {
                     condition,
@@ -68,7 +68,9 @@ pub(crate) fn execute_scope<'a>(
                         else_if_blocks,
                         context,
                         environment,
-                    )? {
+                    )
+                    .await?
+                    {
                         ScopeExecutionResult::Normal(content) => {
                             accumulated_content.push_str(&content)
                         }
@@ -83,7 +85,9 @@ pub(crate) fn execute_scope<'a>(
                 }
                 Statement::Return(expression) => {
                     let value = match expression {
-                        Some(expr) => Some(evaluate_expression(&expr, (context, environment))?),
+                        Some(expr) => {
+                            Some(evaluate_expression(&expr, (context, environment)).await?)
+                        }
                         None => None,
                     };
                     return Ok(ScopeExecutionResult::Return(value));
@@ -91,7 +95,7 @@ pub(crate) fn execute_scope<'a>(
                 Statement::Break => return Ok(ScopeExecutionResult::Break),
                 Statement::Continue => return Ok(ScopeExecutionResult::Continue),
                 Statement::Display(expression) => {
-                    let value = evaluate_expression(expression, (context, environment))?;
+                    let value = evaluate_expression(expression, (context, environment)).await?;
                     accumulated_content.push_str(&format!("{}", value));
                 }
             },
@@ -101,27 +105,27 @@ pub(crate) fn execute_scope<'a>(
     Ok(ScopeExecutionResult::Normal(accumulated_content))
 }
 
-fn execute_if_statement(
-    condition: &Expression,
-    then_block: &Scope,
-    else_block: &Option<Scope>,
-    else_if_blocks: &Vec<(Expression, Scope)>,
-    context: &Context,
+async fn execute_if_statement<'a>(
+    condition: &Expression<'a>,
+    then_block: &Scope<'a>,
+    else_block: &Option<Scope<'a>>,
+    else_if_blocks: &Vec<(Expression<'a>, Scope<'a>)>,
+    context: &Context<'a>,
     environment: &mut HashMap<String, Value>,
 ) -> Result<ScopeExecutionResult, String> {
     let combined_data: Data = (context, environment);
 
-    let condition_value = evaluate_expression(&condition, combined_data)?;
+    let condition_value = evaluate_expression(&condition, combined_data).await?;
     if value_to_bool(condition_value) {
         let mut then_environment = HashMap::new();
-        execute_scope(&then_block, context, &mut then_environment)
+        Box::pin(execute_scope(&then_block, context, &mut then_environment)).await
     } else {
         for (condition, block) in else_if_blocks {
-            let else_if_condition_value = evaluate_expression(condition, combined_data)?;
+            let else_if_condition_value = evaluate_expression(condition, combined_data).await?;
             if let Value::Bool(else_if_condition) = else_if_condition_value {
                 if else_if_condition {
                     let mut else_if_environment = HashMap::new();
-                    return execute_scope(block, context, &mut else_if_environment);
+                    return Box::pin(execute_scope(block, context, &mut else_if_environment)).await;
                 }
             } else {
                 return Err(format!(
@@ -133,7 +137,7 @@ fn execute_if_statement(
 
         if let Some(else_branch) = else_block {
             let mut else_environment = HashMap::new();
-            execute_scope(else_branch, context, &mut else_environment)
+            Box::pin(execute_scope(else_branch, context, &mut else_environment)).await
         } else {
             Ok(ScopeExecutionResult::Normal(String::new()))
         }

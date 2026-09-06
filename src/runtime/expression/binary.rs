@@ -2,12 +2,12 @@ use crate::parser::ast::{BinaryExpression, BinaryOperator};
 use crate::runtime::expression::{evaluate_expression, value_to_bool, Data};
 use crate::runtime::value::Value;
 
-pub fn evaluate_binary<'a>(
+pub async fn evaluate_binary<'a>(
     binary_expression: &BinaryExpression<'a>,
     data: Data<'a>,
 ) -> Result<Value, String> {
-    let left_value = evaluate_expression(&binary_expression.left, data)?;
-    let right_value = evaluate_expression(&binary_expression.right, data)?;
+    let left_value = Box::pin(evaluate_expression(&binary_expression.left, data)).await?;
+    let right_value = Box::pin(evaluate_expression(&binary_expression.right, data)).await?;
 
     match binary_expression.operator {
         BinaryOperator::Addition => Ok(match (left_value, right_value) {
