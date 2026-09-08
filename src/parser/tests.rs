@@ -12,7 +12,7 @@ pub fn parse(lexer: Lexer) -> Result<Scope, GeneralError> {
     Parser::new(lexer).parse()
 }
 
-fn parse_program(input: &str) -> Result<Scope, GeneralError> {
+fn parse_program<'a>(input: &'a str) -> Result<Scope<'a>, GeneralError> {
     let lexer = Lexer::new(input);
     parse(lexer)
 }

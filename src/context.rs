@@ -8,12 +8,14 @@ use std::future::Future;
 use std::pin::Pin;
 
 pub type BoxFuture<T> = Pin<Box<dyn Future<Output = T> + Send>>;
+pub type AsyncFn = Box<dyn Fn(Vec<Value>) -> BoxFuture<Result<Value, String>> + Send + Sync>;
 
 pub enum FunctionDefinition {
     Sync(Box<dyn Fn(Vec<Value>) -> Result<Value, String>>),
-    Async(Box<dyn Fn(Vec<Value>) -> BoxFuture<Result<Value, String>> + Send + Sync>),
+    Async(AsyncFn),
 }
 
+#[derive(Default)]
 pub struct Context<'a> {
     data: HashMap<&'a str, Value>,
     calls: HashMap<String, FunctionDefinition>,
@@ -21,10 +23,7 @@ pub struct Context<'a> {
 
 impl<'a> Context<'a> {
     pub fn new() -> Self {
-        Self {
-            data: Default::default(),
-            calls: Default::default(),
-        }
+        Self::default()
     }
 
     pub fn get(&self, key: &str) -> Option<&Value> {
@@ -60,7 +59,6 @@ impl<'a> Context<'a> {
         );
     }
 
-    // Something you'll want: a uniform way to actually call either kind.
     pub async fn call(&self, name: &str, args: Vec<Value>) -> Result<Value, String> {
         match self
             .calls

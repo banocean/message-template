@@ -36,17 +36,27 @@ impl TokenizationError {
 
 impl fmt::Display for TokenizationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.description().fmt(f)
+        match &self.kind {
+            TokenizationErrorKind::InvalidChar(c) => {
+                write!(f, "Invalid character in code block: '{}'", c)
+            }
+            TokenizationErrorKind::UnexpectedEndOfInput => {
+                write!(f, "End of input in middle of code block")
+            }
+            TokenizationErrorKind::ParseInteger(err) => {
+                write!(f, "Failed to parse integer: {}", err)
+            }
+            TokenizationErrorKind::ParseFloat(err) => write!(f, "Failed to parse float: {}", err),
+        }
     }
 }
 
 impl Error for TokenizationError {
-    fn description(&self) -> &str {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            TokenizationErrorKind::InvalidChar(_) => "Invalid character in code block",
-            TokenizationErrorKind::UnexpectedEndOfInput => "End of input in middle of code block",
-            TokenizationErrorKind::ParseInteger(error) => error.description(),
-            TokenizationErrorKind::ParseFloat(error) => error.description(),
+            TokenizationErrorKind::ParseInteger(err) => Some(err),
+            TokenizationErrorKind::ParseFloat(err) => Some(err),
+            _ => None,
         }
     }
 }

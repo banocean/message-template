@@ -75,9 +75,9 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn try_collect(&mut self) -> Result<Vec<Token>, TokenizationError> {
+    pub fn try_collect(&mut self) -> Result<Vec<Token<'a>>, TokenizationError> {
         let mut accumulator = vec![];
-        while let Some(result) = self.next() {
+        for result in self.by_ref() {
             accumulator.push(result?)
         }
         Ok(accumulator)

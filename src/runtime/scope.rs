@@ -29,7 +29,7 @@ pub(crate) async fn execute_scope<'a>(
                     identifier,
                     expression,
                 } => {
-                    let value = evaluate_expression(&expression, (context, environment)).await?;
+                    let value = evaluate_expression(expression, (context, environment)).await?;
                     environment.insert(identifier.name.to_string(), value);
                 }
                 Statement::For {
@@ -44,7 +44,7 @@ pub(crate) async fn execute_scope<'a>(
                             for item in arr {
                                 let mut loop_environment = environment.clone();
                                 loop_environment.insert(identifier.name.to_string(), item.clone());
-                                match Box::pin(execute_scope(body, &context, &mut loop_environment)).await? {
+                                match Box::pin(execute_scope(body, context, &mut loop_environment)).await? {
                                     ScopeExecutionResult::Normal(content) => accumulated_content.push_str(&content),
                                     ScopeExecutionResult::Return(value) => return Ok(ScopeExecutionResult::Return(value)),
                                     ScopeExecutionResult::Break => break,
@@ -86,7 +86,7 @@ pub(crate) async fn execute_scope<'a>(
                 Statement::Return(expression) => {
                     let value = match expression {
                         Some(expr) => {
-                            Some(evaluate_expression(&expr, (context, environment)).await?)
+                            Some(evaluate_expression(expr, (context, environment)).await?)
                         }
                         None => None,
                     };
@@ -115,10 +115,10 @@ async fn execute_if_statement<'a>(
 ) -> Result<ScopeExecutionResult, String> {
     let combined_data: Data = (context, environment);
 
-    let condition_value = evaluate_expression(&condition, combined_data).await?;
+    let condition_value = evaluate_expression(condition, combined_data).await?;
     if value_to_bool(condition_value) {
         let mut then_environment = HashMap::new();
-        Box::pin(execute_scope(&then_block, context, &mut then_environment)).await
+        Box::pin(execute_scope(then_block, context, &mut then_environment)).await
     } else {
         for (condition, block) in else_if_blocks {
             let else_if_condition_value = evaluate_expression(condition, combined_data).await?;

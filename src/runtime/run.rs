@@ -16,7 +16,7 @@ pub async fn run<'a>(
     data: String,
     context: Option<&Context<'a>>,
 ) -> Result<ExecutionResult, String> {
-    let lexer = Lexer::new(&*data);
+    let lexer = Lexer::new(&data);
     let parser = Parser::new(lexer);
     let ast = parser.parse().map_err(|err| err.to_string())?;
     run_ast(&ast, context).await

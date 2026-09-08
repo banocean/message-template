@@ -94,27 +94,9 @@ pub async fn evaluate_binary<'a>(
                     .map(Value::Integer)
                     .ok_or_else(|| "Integer remainder error (e.g. i64::MIN % -1)".to_string())
             }
-            (Value::Float(l), Value::Float(r)) => {
-                if r == 0.0 {
-                    Ok(Value::Float(l % r))
-                } else {
-                    Ok(Value::Float(l % r))
-                }
-            }
-            (Value::Integer(l), Value::Float(r)) => {
-                if r == 0.0 {
-                    Ok(Value::Float((l as f64) % r))
-                } else {
-                    Ok(Value::Float(l as f64 % r))
-                }
-            }
-            (Value::Float(l), Value::Integer(r)) => {
-                if r == 0 {
-                    Ok(Value::Float(l % (r as f64)))
-                } else {
-                    Ok(Value::Float(l % r as f64))
-                }
-            }
+            (Value::Float(l), Value::Float(r)) => Ok(Value::Float(l % r)),
+            (Value::Integer(l), Value::Float(r)) => Ok(Value::Float((l as f64) % r)),
+            (Value::Float(l), Value::Integer(r)) => Ok(Value::Float(l % r as f64)),
             (l, r) => Err(format!("Cannot apply remainder to {l:?} and {r:?}")),
         },
         BinaryOperator::Exponent => match (left_value, right_value) {
@@ -130,7 +112,7 @@ pub async fn evaluate_binary<'a>(
                     let mut acc = 1_i64;
                     let cur_base = base;
 
-                    if u_exp > 63 && (base > 1 || base < -1) {
+                    if u_exp > 63 && !(-1..=1).contains(&base) {
                         return Err(
                             "Integer exponentiation overflow (exponent too large)".to_string()
                         );

@@ -11,6 +11,7 @@ pub struct Parser<'a> {
 #[derive(Clone, Debug, PartialEq)]
 enum ScopeEnding<'a> {
     End,
+    #[allow(clippy::upper_case_acronyms)]
     EOF,
     ElseIf(Expression<'a>),
     Else,
@@ -33,7 +34,7 @@ impl<'a> Parser<'a> {
         self.parse_scope().map(|(s, _)| s)
     }
 
-    fn parse_scope<'b>(&mut self) -> Result<(Scope<'a>, ScopeEnding<'a>), GeneralError> {
+    fn parse_scope(&mut self) -> Result<(Scope<'a>, ScopeEnding<'a>), GeneralError> {
         let mut program_flow = Vec::new();
         while let Some(flow) = self.parse_program_flow() {
             match flow? {
@@ -459,16 +460,16 @@ impl<'a> Parser<'a> {
     }
 
     fn peek_expression_start(&mut self) -> bool {
-        match self.peek_token_type() {
+        matches!(
+            self.peek_token_type(),
             Ok(TokenType::Ident)
-            | Ok(TokenType::String)
-            | Ok(TokenType::Integer)
-            | Ok(TokenType::Float)
-            | Ok(TokenType::Bool)
-            | Ok(TokenType::LeftBracket)
-            | Ok(TokenType::Not)
-            | Ok(TokenType::Subtraction) => true,
-            _ => false,
-        }
+                | Ok(TokenType::String)
+                | Ok(TokenType::Integer)
+                | Ok(TokenType::Float)
+                | Ok(TokenType::Bool)
+                | Ok(TokenType::LeftBracket)
+                | Ok(TokenType::Not)
+                | Ok(TokenType::Subtraction)
+        )
     }
 }
