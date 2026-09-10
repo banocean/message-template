@@ -87,3 +87,98 @@ macro_rules! context {
     };
 }
 
+#[cfg(test)]
+mod tests {
+    use crate::{Context, Value};
+    #[cfg(feature = "context")]
+    use serde::Serialize;
+    #[cfg(feature = "context")]
+    use std::collections::HashMap;
+
+    #[cfg(feature = "context")]
+    #[test]
+    fn try_context() {
+        let context = context! {
+            "a": "123",
+            "b": { "a": "test" },
+            "c": 123.1
+        };
+
+        assert_eq!(context.get("a"), Some(&Value::String("123".to_string())));
+
+        let expected_object = Value::Object(HashMap::from([(
+            "a".to_string(),
+            Value::String("test".to_string()),
+        )]));
+        assert_eq!(context.get("b"), Some(&expected_object));
+
+        assert_eq!(context.get("c"), Some(&Value::Float(123.1)));
+    }
+
+    async fn run_values(values: Vec<Value>) -> Result<Value, String> {
+        if values.len() > 1 {
+            return Err("Too many arguments".to_string());
+        }
+
+        if let Some(Value::String(value)) = values.get(0) {
+            Ok(Value::String(value.clone() + " test"))
+        } else {
+            Ok(Value::Null)
+        }
+    }
+
+    #[tokio::test]
+    async fn try_call_fn() {
+        let mut context = Context::new();
+        context.register_async_function("test", run_values);
+
+        assert_eq!(context.call("test", Vec::new()).await, Ok(Value::Null));
+
+        assert_eq!(
+            context.call("test", vec![Value::Null, Value::Null]).await,
+            Err("Too many arguments".to_string())
+        );
+
+        assert_eq!(
+            context
+                .call("test", vec![Value::String("test".to_string())])
+                .await,
+            Ok(Value::String("test test".to_string()))
+        )
+    }
+
+    #[cfg(feature = "context")]
+    #[derive(Serialize, Clone)]
+    struct User {
+        name: String,
+        ids: Vec<u64>,
+    }
+
+    #[cfg(feature = "context")]
+    #[tokio::test]
+    async fn index_struct() {
+        let user = User {
+            name: "test".to_string(),
+            ids: vec![1, 2],
+        };
+
+        let mut context = Context::new();
+        context.insert("user", user.clone());
+
+        let expected_user = Some(&Value::Object(HashMap::from([
+            ("name".to_string(), Value::String("test".to_string())),
+            (
+                "ids".to_string(),
+                Value::Array(vec![Value::Integer(1), Value::Integer(2)]),
+            ),
+        ])));
+
+        assert_eq!(context.get("user"), expected_user);
+
+        let context = context! {
+            "user": user
+        };
+
+        assert_eq!(context.get("user"), expected_user);
+    }
+}

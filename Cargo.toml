@@ -11,3 +11,6 @@ context = ["serde_json", "serde"]
 [dependencies]
 serde_json = { optional = true, version = "1.0" }
 serde = { optional = true, version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread"] }
