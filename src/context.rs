@@ -70,3 +70,20 @@ impl<'a> Context<'a> {
         }
     }
 }
+
+#[cfg(feature = "context")]
+#[macro_export]
+macro_rules! context {
+    ($($k:tt: $v:tt),* $(,)?) => {{
+        let mut ctx = $crate::Context::new();
+        $( context!(@ins ctx, $k, $v); )*
+        ctx
+    }};
+    (@ins $ctx:ident, $k:expr, { $($v:tt)* }) => {
+        $ctx.insert_value($k, $crate::Value::from(serde_json::json!({ $($v)* })));
+    };
+    (@ins $ctx:ident, $k:expr, $v:expr) => {
+        $ctx.insert($k, $v);
+    };
+}
+
