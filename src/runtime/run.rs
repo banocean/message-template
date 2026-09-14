@@ -13,9 +13,10 @@ pub enum ExecutionResult {
 }
 
 pub async fn run<'a>(
-    data: String,
+    data: impl Into<String>,
     context: Option<&Context<'a>>,
 ) -> Result<ExecutionResult, String> {
+    let data = data.into();
     let lexer = Lexer::new(&data);
     let parser = Parser::new(lexer);
     let ast = parser.parse().map_err(|err| err.to_string())?;
@@ -49,7 +50,7 @@ fn to_text_output(result: Result<ExecutionResult, String>) -> String {
     }
 }
 
-pub async fn run_as_text<'a>(data: String, context: Option<&Context<'a>>) -> String {
+pub async fn run_as_text<'a>(data: impl Into<String>, context: Option<&Context<'a>>) -> String {
     to_text_output(run(data, context).await)
 }
 
