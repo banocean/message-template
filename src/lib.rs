@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 pub use context::Context;
 pub use lexer::iterate::Lexer;
 pub use lexer::tokens::Token;
