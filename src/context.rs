@@ -76,7 +76,7 @@ impl<'a> Context<'a> {
 macro_rules! context {
     ($($k:tt: $v:tt),* $(,)?) => {{
         let mut ctx = $crate::Context::new();
-        $( context!(@ins ctx, $k, $v); )*
+        $( $crate::context!(@ins ctx, $k, $v); )*
         ctx
     }};
     (@ins $ctx:ident, $k:expr, { $($v:tt)* }) => {
@@ -84,6 +84,19 @@ macro_rules! context {
     };
     (@ins $ctx:ident, $k:expr, $v:expr) => {
         $ctx.insert($k, $v);
+    };
+}
+
+#[cfg(not(feature = "context"))]
+#[macro_export]
+macro_rules! context {
+    ($($k:tt: $v:tt),* $(,)?) => {{
+        let mut ctx = $crate::Context::new();
+        $( $crate::context!(@ins ctx, $k, $v); )*
+        ctx
+    }};
+    (@ins $ctx:ident, $k:expr, $v:expr) => {
+        $ctx.insert_value($k, $crate::Value::from($v));
     };
 }
 
