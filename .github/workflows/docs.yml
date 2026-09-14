@@ -32,6 +32,7 @@ jobs:
       - name: Build documentation
         run: |
           cargo doc --no-deps --all-features
+          touch target/doc/.nojekyll
           echo '<meta http-equiv="refresh" content="0; url=message_template/index.html">' > target/doc/index.html
 
       - name: Setup Pages
