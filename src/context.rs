@@ -133,7 +133,7 @@ mod tests {
             return Err("Too many arguments".to_string());
         }
 
-        if let Some(Value::String(value)) = values.get(0) {
+        if let Some(Value::String(value)) = values.first() {
             Ok(Value::String(value.clone() + " test"))
         } else {
             Ok(Value::Null)
