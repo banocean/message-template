@@ -1,7 +1,7 @@
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 use message_template::*;
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 #[tokio::test]
 async fn test_e2e_serde_context_integration() {
     #[derive(serde::Serialize)]
@@ -24,7 +24,7 @@ async fn test_e2e_serde_context_integration() {
     assert_eq!(result, "User serdeuser is active");
 }
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 #[tokio::test]
 async fn test_e2e_context_macro() {
     #[derive(serde::Serialize)]
@@ -48,7 +48,7 @@ async fn test_e2e_context_macro() {
     assert_eq!(result, "Store Catalog: Widget costs $19.99");
 }
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 #[tokio::test]
 async fn test_e2e_serde_nested_structs() {
     #[derive(serde::Serialize)]

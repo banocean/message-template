@@ -12,7 +12,7 @@ A simple templating language for rust.
 - **Control Flow Statements**: `if` / `else if` / `else` conditionals, `for` loops over arrays, `break`, `continue`, and `return` statements.
 - **Data Structure Navigation**: Object property access (`user.name`) and array indexing (`items[0]`).
 - **Outside Function Calling**: Easily call sync and async rust functions from templates.
-- **Serde Context Integration**: Optional feature (`context`) allows adding structs to context that implement `serde::Serialize`.
+- **Serde Context Integration**: Optional feature (`serde`) allows adding structs to context that implement `serde::Serialize`.
 
 ## Quickstart
 
@@ -188,12 +188,12 @@ async fn main() {
 }
 ```
 
-## Serde & Context Feature (`context`)
+## Context & Serde Feature (`serde`)
 
-Enable the `context` feature in your `Cargo.toml`:
+Enable the `serde` feature in your `Cargo.toml` to access serde serialization inside context structs:
 
 ```toml
-message-template = { git = "https://github.com/banocean/message-template.git", features = ["context"] }
+message-template = { git = "https://github.com/banocean/message-template.git", features = ["serde"] }
 ```
 
 ### Inserting Serde Structs
@@ -203,7 +203,7 @@ Directly insert any `serde::Serialize` struct into the context using `Context::i
 ```rust
 use message_template::*;
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 async fn execute() {
     #[derive(serde::Serialize)]
     struct User {
@@ -222,7 +222,7 @@ async fn execute() {
 
 #[tokio::main]
 async fn main() {
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     execute().await
 }
 ```
@@ -234,7 +234,7 @@ Construct contexts using a JSON-like syntax with the `context!` macro:
 ```rust
 use message_template::*;
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 async fn execute() {
     let context = context! {
         "siteName": "My Store",
@@ -252,7 +252,7 @@ async fn execute() {
 
 #[tokio::main]
 async fn main() {
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     execute().await
 }
 ```
@@ -266,10 +266,10 @@ async fn main() {
 - [`Context`]: Context structure holding variable bindings and registered custom functions for template execution.
   - [`Context::new`]: Instantiates a new empty context.
   - [`Context::insert_value`]: Inserts a key and a [`Value`] into the context.
-  - `Context::insert`: *(feature `context`)* Inserts any type implementing `serde::Serialize`.
+  - `Context::insert`: *(feature `serde`)* Inserts any type implementing `serde::Serialize`.
   - [`Context::register_function`]: Registers a synchronous function closure into the context.
   - [`Context::register_async_function`]: Registers an asynchronous function into the context.
-- [`context!`]: Macro for initializing a [`Context`] using JSON-like key-value mapping syntax. (Supports `serde::Serialize` types when feature `context` is enabled).
+- [`context!`]: Macro for initializing a [`Context`] using JSON-like key-value mapping syntax. (Supports `serde::Serialize` types when feature `serde` is enabled).
 - [`Value`]: Primitive data type enum (`String`, `Integer`, `Float`, `Bool`, `Array`, `Object`, `Null`).
 - [`ExecutionResult`]: Outcome enum containing either [`ExecutionResult::Template`] or [`ExecutionResult::Value`].
 

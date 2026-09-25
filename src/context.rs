@@ -1,7 +1,7 @@
 use crate::Value;
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 use serde::Serialize;
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 use serde_json::to_value;
 use std::collections::HashMap;
 use std::future::Future;
@@ -34,7 +34,7 @@ impl<'a> Context<'a> {
         self.data.insert(key, value);
     }
 
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     pub fn insert<T: Serialize>(&mut self, key: &'a str, value: T) {
         self.data.insert(key, to_value(value).unwrap().into());
     }
@@ -71,7 +71,7 @@ impl<'a> Context<'a> {
     }
 }
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 #[macro_export]
 macro_rules! context {
     ($($k:tt: $v:tt),* $(,)?) => {{
@@ -87,7 +87,7 @@ macro_rules! context {
     };
 }
 
-#[cfg(not(feature = "context"))]
+#[cfg(not(feature = "serde"))]
 #[macro_export]
 macro_rules! context {
     ($($k:tt: $v:tt),* $(,)?) => {{
@@ -103,12 +103,12 @@ macro_rules! context {
 #[cfg(test)]
 mod tests {
     use crate::{Context, Value};
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     use serde::Serialize;
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     use std::collections::HashMap;
 
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     #[test]
     fn try_context() {
         let context = context! {
@@ -160,14 +160,14 @@ mod tests {
         )
     }
 
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     #[derive(Serialize, Clone)]
     struct User {
         name: String,
         ids: Vec<u64>,
     }
 
-    #[cfg(feature = "context")]
+    #[cfg(feature = "serde")]
     #[tokio::test]
     async fn index_struct() {
         let user = User {

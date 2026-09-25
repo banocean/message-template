@@ -63,8 +63,7 @@ async fn test_e2e_for_loop_with_break() {
     let mut context = Context::new();
     context.insert_value("numbers", numbers);
 
-    let template =
-        "{{ for n in numbers }}{{ if n > 3 }}{{ break }}{{ end }}{{ n }}{{ end }}";
+    let template = "{{ for n in numbers }}{{ if n > 3 }}{{ break }}{{ end }}{{ n }}{{ end }}";
     let result = run_as_text(template, Some(&context)).await;
     assert_eq!(result, "123");
 }
@@ -100,8 +99,7 @@ async fn test_e2e_nested_for_loops() {
     context.insert_value("outer", outer);
     context.insert_value("inner", inner);
 
-    let template =
-        "{{ for i in outer }}{{ for j in inner }}[ {{ i }}{{ j }} ]{{ end }}{{ end }}";
+    let template = "{{ for i in outer }}{{ for j in inner }}[ {{ i }}{{ j }} ]{{ end }}{{ end }}";
     let result = run_as_text(template, Some(&context)).await;
     assert_eq!(result, "[ 1a ][ 1b ][ 2a ][ 2b ]");
 }

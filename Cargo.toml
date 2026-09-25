@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-context = ["serde_json", "serde"]
+serde = ["serde_json", "dep:serde"]
 
 [dependencies]
 serde_json = { optional = true, version = "1.0" }

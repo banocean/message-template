@@ -79,7 +79,7 @@ impl From<bool> for Value {
     }
 }
 
-#[cfg(feature = "context")]
+#[cfg(feature = "serde")]
 impl From<serde_json::Value> for Value {
     fn from(value: serde_json::Value) -> Self {
         match value {
