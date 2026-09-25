@@ -19,7 +19,7 @@ A simple templating language for rust.
 Add `message-template` to your `Cargo.toml`:
 
 ```toml
-message-template = { git = "https://github.com/banocean/message-template.git" }
+message-template = "0.1"
 ```
 
 ### Basic Example
@@ -193,7 +193,7 @@ async fn main() {
 Enable the `serde` feature in your `Cargo.toml` to access serde serialization inside context structs:
 
 ```toml
-message-template = { git = "https://github.com/banocean/message-template.git", features = ["serde"] }
+message-template = { version = "0.1", features = ["serde"] }
 ```
 
 ### Inserting Serde Structs
