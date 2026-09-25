@@ -3,7 +3,10 @@ name = "message-template"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "A simple templating language for generating short messages, with support for all the necessary statements and expressions."
+license = "MIT"
+repository = "https://github.com/banocean/message-template.git"
+homepage = "https://github.com/banocean/message-template"
 
 [features]
 serde = ["serde_json", "dep:serde"]
